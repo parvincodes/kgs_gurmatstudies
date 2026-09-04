@@ -66,16 +66,22 @@ const PORTAL_FEATURES = [
     icon: SearchIcon,
     title: "Searchable Study Materials",
     desc: "Find Gurbani translations, history readings, and philosophy notes in seconds.",
+    href: "/materials",
+    status: "Try it",
   },
   {
     icon: ChartIcon,
     title: "Progress Tracking",
     desc: "See what you've covered this year and what's coming up next.",
+    href: "/progress",
+    status: "Preview",
   },
   {
     icon: LockIcon,
     title: "Student & Teacher Login",
     desc: "A secure, whitelisted login so your class progress stays with you.",
+    href: null,
+    status: "Soon",
   },
 ];
 
@@ -96,7 +102,10 @@ export default function Home() {
             aria-hidden="true"
           />
           <div className="relative mx-auto max-w-6xl px-5 py-24 sm:py-28">
-            <p className="font-heading text-sm font-semibold uppercase tracking-[0.2em] text-saffron-light">
+            <span className="inline-block rounded-full border border-saffron-light/40 bg-cream/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-saffron-light">
+              Study Portal · Early Preview
+            </span>
+            <p className="font-heading mt-4 text-sm font-semibold uppercase tracking-[0.2em] text-saffron-light">
               Waheguru Ji Ka Khalsa, Waheguru Ji Ki Fateh
             </p>
             <h1 className="font-heading mt-5 max-w-2xl text-4xl font-extrabold leading-tight sm:text-5xl">
@@ -104,18 +113,18 @@ export default function Home() {
               <br /> Growing in Community.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/75">
-              Khalsa Gurmat School is a learning community for students
-              14&nbsp;and&nbsp;up — studying Gurbani, Sikh history, and
+              The new study portal for Khalsa Gurmat School — students
+              14&nbsp;and&nbsp;up studying Gurbani, Sikh history, and
               philosophy together, and living it out through seva and
               service.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
-              <a
-                href="#program"
+              <Link
+                href="/materials"
                 className="rounded-full bg-saffron px-7 py-3 text-sm font-semibold text-navy-dark shadow-lg shadow-saffron/20 transition hover:bg-saffron-light"
               >
-                Explore This Year&apos;s Program
-              </a>
+                Browse Study Materials
+              </Link>
               <Link
                 href="/login"
                 className="rounded-full border border-cream/30 px-7 py-3 text-sm font-semibold text-cream transition hover:bg-cream/10"
@@ -226,43 +235,63 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Portal preview / coming soon */}
+        {/* Portal preview */}
         <section id="portal" className="bg-cream-dark/60 py-20">
           <div className="mx-auto max-w-6xl px-5">
             <div className="max-w-xl">
               <p className="font-heading text-sm font-semibold uppercase tracking-wide text-saffron-dark">
-                Coming Soon to the Portal
+                The Study Portal
               </p>
               <h2 className="font-heading mt-2 text-3xl font-bold text-navy">
                 Your study materials, all in one place
               </h2>
               <p className="mt-3 text-navy/65">
-                We&apos;re building a student &amp; teacher portal so
-                you can find materials fast and track your own progress
-                through the year.
+                Two pieces are already live as early previews below —
+                try them and tell us what you think. Login is still on
+                the way.
               </p>
             </div>
 
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
-              {PORTAL_FEATURES.map(({ icon: Icon, title, desc }) => (
-                <div
-                  key={title}
-                  className="relative rounded-2xl border border-dashed border-navy/20 bg-cream p-7"
-                >
-                  <span className="absolute right-5 top-5 rounded-full bg-saffron/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-saffron-dark">
-                    Soon
-                  </span>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-navy/5 text-navy">
-                    <Icon />
+              {PORTAL_FEATURES.map(({ icon: Icon, title, desc, href, status }) => {
+                const card = (
+                  <div
+                    className={`relative h-full rounded-2xl border bg-cream p-7 ${
+                      href
+                        ? "border-navy/10 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                        : "border-dashed border-navy/20"
+                    }`}
+                  >
+                    <span
+                      className={`absolute right-5 top-5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                        href
+                          ? "bg-navy text-cream"
+                          : "bg-saffron/15 text-saffron-dark"
+                      }`}
+                    >
+                      {status}
+                    </span>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-navy/5 text-navy">
+                      <Icon />
+                    </div>
+                    <h3 className="font-heading mt-5 text-lg font-bold text-navy">
+                      {title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-navy/65">
+                      {desc}
+                    </p>
                   </div>
-                  <h3 className="font-heading mt-5 text-lg font-bold text-navy">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-navy/65">
-                    {desc}
-                  </p>
-                </div>
-              ))}
+                );
+                return href ? (
+                  <Link key={title} href={href} className="block h-full">
+                    {card}
+                  </Link>
+                ) : (
+                  <div key={title} className="h-full">
+                    {card}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -271,17 +300,19 @@ export default function Home() {
         <section className="mx-auto max-w-6xl px-5 py-20">
           <div className="rounded-3xl bg-gradient-to-br from-saffron to-saffron-dark px-8 py-14 text-center text-navy-dark sm:px-16">
             <h2 className="font-heading text-3xl font-extrabold">
-              Bring a friend to the next session
+              This portal is brand new — tell us what you think
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-navy-dark/80">
-              Open to all students 14 and up. Reach out and we&apos;ll get
-              you connected with your class.
+              We&apos;re building this early and gathering feedback from
+              students, teachers, and parents before going further.
+              Try the study materials preview and let us know what
+              would make it more useful.
             </p>
             <a
               href="mailto:info@khalsagurmatschool.org"
               className="mt-8 inline-block rounded-full bg-navy px-8 py-3 text-sm font-semibold text-cream transition hover:bg-navy-light"
             >
-              Contact Us
+              Share Feedback
             </a>
           </div>
         </section>

@@ -5,10 +5,10 @@ import Link from "next/link";
 import Logo from "./Logo";
 
 const NAV_LINKS = [
-  { href: "#program", label: "This Year's Program" },
-  { href: "#community", label: "Community & Seva" },
-  { href: "#portal", label: "Student Portal" },
-  { href: "#contact", label: "Contact" },
+  { href: "/materials", label: "Study Materials" },
+  { href: "/#program", label: "This Year's Program" },
+  { href: "/#community", label: "Community & Seva" },
+  { href: "/#contact", label: "Contact" },
 ];
 
 export default function Header() {
@@ -26,13 +26,13 @@ export default function Header() {
 
         <nav className="hidden items-center gap-7 md:flex">
           {NAV_LINKS.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="text-sm font-medium text-navy/80 transition hover:text-saffron-dark"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
           <Link
             href="/login"
@@ -62,14 +62,14 @@ export default function Header() {
       {open && (
         <nav className="flex flex-col gap-1 border-t border-navy/10 bg-cream px-5 pb-4 md:hidden">
           {NAV_LINKS.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
               className="rounded-lg px-2 py-2.5 text-sm font-medium text-navy/80 hover:bg-navy/5"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
           <Link
             href="/login"

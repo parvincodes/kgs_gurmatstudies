@@ -25,18 +25,23 @@ export default function Footer() {
             </h3>
             <ul className="mt-4 space-y-2 text-sm">
               <li>
-                <a href="#program" className="hover:text-cream">
+                <a href="/materials" className="hover:text-cream">
+                  Study Materials
+                </a>
+              </li>
+              <li>
+                <a href="/progress" className="hover:text-cream">
+                  Progress Tracking (Preview)
+                </a>
+              </li>
+              <li>
+                <a href="/#program" className="hover:text-cream">
                   This Year&apos;s Program
                 </a>
               </li>
               <li>
-                <a href="#community" className="hover:text-cream">
+                <a href="/#community" className="hover:text-cream">
                   Community &amp; Seva
-                </a>
-              </li>
-              <li>
-                <a href="#portal" className="hover:text-cream">
-                  Student Portal
                 </a>
               </li>
               <li>
