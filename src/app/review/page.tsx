@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PreviewBanner from "@/components/PreviewBanner";
 import StatusBadge from "@/components/StatusBadge";
+import FilePreviewPanel from "@/components/FilePreviewPanel";
 import { UploadCloudIcon } from "@/components/icons";
 import type { MaterialRecord, MaterialStatus } from "@/lib/materials-db";
 import { useTeacherAuth } from "@/lib/useTeacherAuth";
@@ -36,6 +37,7 @@ export default function ReviewPage() {
   const [drafts, setDrafts] = useState<
     Record<number, { title: string; description: string }>
   >({});
+  const [previewing, setPreviewing] = useState<MaterialRecord | null>(null);
 
   const loadMaterials = useCallback(async (pass: string) => {
     setLoading(true);
@@ -310,14 +312,12 @@ export default function ReviewPage() {
                         {inferKind(material.pathname)}
                       </span>
                       <StatusBadge status={material.status} />
-                      <a
-                        href={material.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => setPreviewing(material)}
                         className="ml-auto text-xs font-medium text-saffron-dark hover:underline"
                       >
-                        Open file ↗
-                      </a>
+                        Preview
+                      </button>
                     </div>
 
                     <input
@@ -408,6 +408,7 @@ export default function ReviewPage() {
         </div>
       </main>
       <Footer />
+      <FilePreviewPanel file={previewing} onClose={() => setPreviewing(null)} />
     </>
   );
 }

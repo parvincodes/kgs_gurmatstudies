@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PreviewBanner from "@/components/PreviewBanner";
 import StatusBadge from "@/components/StatusBadge";
+import FilePreviewPanel from "@/components/FilePreviewPanel";
 import { UploadCloudIcon, FolderIcon, TrashIcon } from "@/components/icons";
 import { SUBJECTS, type Subject } from "@/lib/materials";
 import type { MaterialRecord } from "@/lib/materials-db";
@@ -45,6 +46,7 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [materials, setMaterials] = useState<MaterialRecord[]>([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [previewing, setPreviewing] = useState<MaterialRecord | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -458,14 +460,12 @@ export default function UploadPage() {
                     <span className="rounded-full bg-saffron/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-saffron-dark">
                       {inferKind(material.pathname)}
                     </span>
-                    <a
-                      href={material.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 truncate text-sm font-medium text-navy hover:underline"
+                    <button
+                      onClick={() => setPreviewing(material)}
+                      className="flex-1 truncate text-left text-sm font-medium text-navy hover:underline"
                     >
                       {material.title}
-                    </a>
+                    </button>
                     <StatusBadge status={material.status} />
                     <span className="hidden text-xs text-navy/40 sm:inline">
                       {formatBytes(material.size)}
@@ -485,6 +485,7 @@ export default function UploadPage() {
         </div>
       </main>
       <Footer />
+      <FilePreviewPanel file={previewing} onClose={() => setPreviewing(null)} />
     </>
   );
 }

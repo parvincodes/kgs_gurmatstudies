@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import SearchWidget from "@/components/SearchWidget";
 
 export const metadata: Metadata = {
   title: "Khalsa Gurmat School",
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased scroll-smooth">
-      <body className="min-h-full flex flex-col bg-cream text-navy">{children}</body>
+      <body className="min-h-full flex flex-col bg-cream text-navy">
+        {children}
+        <SearchWidget />
+      </body>
     </html>
   );
 }
