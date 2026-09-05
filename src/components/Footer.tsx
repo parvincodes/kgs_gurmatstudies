@@ -49,6 +49,11 @@ export default function Footer() {
                   Student &amp; Teacher Login
                 </a>
               </li>
+              <li>
+                <a href="/upload" className="hover:text-cream">
+                  Teacher Upload
+                </a>
+              </li>
             </ul>
           </div>
 

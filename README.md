@@ -17,6 +17,11 @@ Built with [Next.js](https://nextjs.org) (App Router) and
 - **`/progress`** — mock progress-tracking preview using sample data,
   not tied to a real account.
 - **`/login`** — placeholder — no auth is wired up yet.
+- **`/upload`** — teacher upload tool for study materials (PDFs, Word,
+  PowerPoint, audio, video). Drag-and-drop or folder select, stored in
+  [Vercel Blob](https://vercel.com/docs/vercel-blob). Gated by a shared
+  passcode (`UPLOAD_PASSCODE`) as a stopgap until real teacher login
+  exists — not real auth, just enough to keep it from being wide open.
 
 The goal of this stage is to share something real with students,
 teachers, and parents and gather feedback before building auth/DB.
@@ -25,10 +30,21 @@ teachers, and parents and gather feedback before building auth/DB.
 
 ```bash
 npm install
+cp .env.local.example .env.local  # fill in the values, see below
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+### Environment variables
+
+| Variable | Required for | Where to get it |
+| --- | --- | --- |
+| `UPLOAD_PASSCODE` | `/upload` | Pick any string — this is the shared teacher passcode. |
+| `BLOB_READ_WRITE_TOKEN` | `/upload` | Vercel dashboard → Storage → create a Blob store → connect it to this project. Locally, run `vercel env pull .env.local` after connecting, or copy the token manually. |
+
+Without these, every other page still works — `/upload` will show a
+clear error instead of crashing.
 
 ## Roadmap — next phase
 
@@ -49,5 +65,10 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Deploying to Vercel
 
 1. Push this repo to GitHub.
-2. Import it at [vercel.com/new](https://vercel.com/new).
-3. No environment variables are required yet (no backend wired up).
+2. Import it at [vercel.com/new](https://vercel.com/new) under your
+   personal account (Hobby plan) — no Team needed for this project.
+3. In the project's Storage tab, create a Blob store and connect it —
+   this sets `BLOB_READ_WRITE_TOKEN` automatically.
+4. In Settings → Environment Variables, add `UPLOAD_PASSCODE` with
+   whatever passcode you want teachers to use.
+5. Redeploy so the new environment variables take effect.
