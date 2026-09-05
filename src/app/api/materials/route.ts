@@ -23,8 +23,10 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   try {
     const materials = await listMaterials(status);
+    console.log("[api/materials] GET returned", materials.length, "rows");
     return NextResponse.json({ materials });
-  } catch {
+  } catch (error) {
+    console.error("[api/materials] GET failed:", error);
     return NextResponse.json(
       { error: "Database isn't configured. Set DATABASE_URL." },
       { status: 500 },
@@ -39,7 +41,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const body = await request.json();
+  console.log("[api/materials] POST", {
+    pathname: body.pathname,
+    subject: body.subject,
+    title: body.title,
+    size: body.size,
+  });
   if (!body.pathname || !body.url || !body.subject || !body.title) {
+    console.error("[api/materials] POST missing fields:", body);
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
@@ -52,8 +61,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       size: Number(body.size) || 0,
       uploadedBy: body.uploadedBy || null,
     });
+    console.log("[api/materials] created id:", material.id);
     return NextResponse.json({ material });
   } catch (error) {
+    console.error("[api/materials] POST failed:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to save" },
       { status: 500 },

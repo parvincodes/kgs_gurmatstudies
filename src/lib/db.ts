@@ -1,7 +1,17 @@
 import { Pool } from "pg";
 import { attachDatabasePool } from "@vercel/functions";
 
+if (!process.env.DATABASE_URL) {
+  console.error(
+    "[db] DATABASE_URL is not set — Postgres connections will fail. " +
+      "Connect a database in Vercel's Storage tab, or set it locally.",
+  );
+}
+
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+pool.on("error", (err) => {
+  console.error("[db] unexpected error on idle client:", err);
+});
 attachDatabasePool(pool);
 
 let schemaReady: Promise<void> | null = null;
@@ -26,7 +36,12 @@ export function ensureSchema(): Promise<void> {
           review_note TEXT
         )`,
       )
-      .then(() => undefined);
+      .then(() => undefined)
+      .catch((error) => {
+        console.error("[db] failed to create schema:", error);
+        schemaReady = null;
+        throw error;
+      });
   }
   return schemaReady;
 }

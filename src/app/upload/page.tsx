@@ -103,6 +103,9 @@ export default function UploadPage() {
     );
 
     const pathname = `materials/${subject}/${Date.now()}-${sanitizeFilename(item.file.name)}`;
+    console.log(
+      `[upload] starting "${item.file.name}" (${item.file.size} bytes) -> ${pathname}`,
+    );
 
     try {
       const blob = await upload(pathname, item.file, {
@@ -111,6 +114,7 @@ export default function UploadPage() {
         clientPayload: JSON.stringify({ passcode, subject }),
         multipart: item.file.size > 100 * 1024 * 1024,
         onUploadProgress: ({ percentage }) => {
+          console.log(`[upload] "${item.file.name}" progress: ${percentage}%`);
           setQueue((prev) =>
             prev.map((q) =>
               q.id === item.id ? { ...q, progress: percentage } : q,
@@ -118,6 +122,7 @@ export default function UploadPage() {
           );
         },
       });
+      console.log(`[upload] "${item.file.name}" landed in Blob:`, blob.url);
 
       setQueue((prev) =>
         prev.map((q) =>
@@ -125,6 +130,7 @@ export default function UploadPage() {
         ),
       );
 
+      console.log(`[upload] "${item.file.name}" saving metadata…`);
       const saveRes = await fetch("/api/materials", {
         method: "POST",
         headers: {
@@ -143,12 +149,17 @@ export default function UploadPage() {
 
       if (!saveRes.ok) {
         const data = await saveRes.json().catch(() => null);
+        console.error(
+          `[upload] "${item.file.name}" metadata save failed (${saveRes.status}):`,
+          data,
+        );
         throw new Error(
           data?.error
             ? `File uploaded, but details weren't saved: ${data.error}`
             : "File uploaded, but details weren't saved.",
         );
       }
+      console.log(`[upload] "${item.file.name}" metadata saved`);
 
       setQueue((prev) =>
         prev.map((q) =>
@@ -157,6 +168,7 @@ export default function UploadPage() {
       );
       loadMaterials(passcode);
     } catch (error) {
+      console.error(`[upload] "${item.file.name}" failed:`, error);
       setQueue((prev) =>
         prev.map((q) =>
           q.id === item.id

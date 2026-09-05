@@ -16,12 +16,15 @@ const MAX_SIZE_BYTES = 500 * 1024 * 1024; // 500MB
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
+  console.log("[api/upload] event type:", body.type);
 
   try {
     const jsonResponse = await handleUpload({
       body,
       request,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
+        console.log("[api/upload] token requested for:", pathname);
+
         let passcode: string | undefined;
         try {
           const parsed = clientPayload ? JSON.parse(clientPayload) : {};
@@ -31,8 +34,14 @@ export async function POST(request: Request): Promise<NextResponse> {
         }
 
         if (!isValidPasscode(passcode)) {
+          console.error(
+            "[api/upload] passcode check failed for:",
+            pathname,
+            "(is UPLOAD_PASSCODE set on this deployment?)",
+          );
           throw new Error("Invalid passcode");
         }
+        console.log("[api/upload] passcode OK, issuing token for:", pathname);
 
         return {
           allowedContentTypes: ALLOWED_CONTENT_TYPES,
@@ -44,6 +53,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
+    console.error("[api/upload] failed:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Upload failed" },
       { status: 400 },
