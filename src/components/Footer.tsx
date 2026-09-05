@@ -54,6 +54,11 @@ export default function Footer() {
                   Teacher Upload
                 </a>
               </li>
+              <li>
+                <a href="/review" className="hover:text-cream">
+                  Review Materials
+                </a>
+              </li>
             </ul>
           </div>
 

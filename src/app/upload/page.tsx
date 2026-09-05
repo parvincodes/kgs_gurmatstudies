@@ -1,21 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import Link from "next/link";
 import { upload } from "@vercel/blob/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PreviewBanner from "@/components/PreviewBanner";
+import StatusBadge from "@/components/StatusBadge";
 import { UploadCloudIcon, FolderIcon, TrashIcon } from "@/components/icons";
 import { SUBJECTS, type Subject } from "@/lib/materials";
+import type { MaterialRecord } from "@/lib/materials-db";
+import { useTeacherAuth } from "@/lib/useTeacherAuth";
 import {
   sanitizeFilename,
   formatBytes,
   inferKind,
-  filenameFromPathname,
-  subjectFromPathname,
+  titleFromFilename,
 } from "@/lib/upload-helpers";
 
-const PASSCODE_STORAGE_KEY = "kgs_upload_passcode";
 const MAX_CONCURRENT_UPLOADS = 3;
 
 type QueueItem = {
@@ -26,87 +28,47 @@ type QueueItem = {
   error?: string;
 };
 
-type UploadedFile = {
-  url: string;
-  pathname: string;
-  size: number;
-  uploadedAt: string;
-};
-
 export default function UploadPage() {
-  const [passcode, setPasscode] = useState("");
+  const {
+    passcode,
+    name,
+    setName,
+    checkingPasscode,
+    passcodeError,
+    verifyPasscode,
+    logout,
+  } = useTeacherAuth();
   const [passcodeInput, setPasscodeInput] = useState("");
-  const [passcodeError, setPasscodeError] = useState<string | null>(null);
-  const [checkingPasscode, setCheckingPasscode] = useState(false);
 
   const [subject, setSubject] = useState<Subject>("Gurbani");
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [filesLoading, setFilesLoading] = useState(false);
+  const [materials, setMaterials] = useState<MaterialRecord[]>([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const pendingUploadsRef = useRef<QueueItem[]>([]);
   const activeUploadsRef = useRef(0);
 
-  const loadFiles = useCallback(async (pass: string) => {
-    setFilesLoading(true);
+  const loadMaterials = useCallback(async (pass: string) => {
+    setMaterialsLoading(true);
     try {
-      const res = await fetch("/api/upload/list", {
+      const res = await fetch("/api/materials", {
         headers: { "x-upload-passcode": pass },
       });
       if (res.ok) {
         const data = await res.json();
-        setFiles(data.files);
+        setMaterials(data.materials);
       }
     } finally {
-      setFilesLoading(false);
+      setMaterialsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem(PASSCODE_STORAGE_KEY);
-    if (stored) {
-      verifyPasscode(stored);
-    }
-  }, []);
-
-  async function verifyPasscode(candidate: string) {
-    setCheckingPasscode(true);
-    setPasscodeError(null);
-    try {
-      const res = await fetch("/api/upload/list", {
-        headers: { "x-upload-passcode": candidate },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setFiles(data.files);
-        setPasscode(candidate);
-        sessionStorage.setItem(PASSCODE_STORAGE_KEY, candidate);
-      } else {
-        const data = await res.json().catch(() => null);
-        setPasscodeError(
-          res.status === 401
-            ? "That passcode didn't work. Try again."
-            : (data?.error ?? "Something went wrong. Try again."),
-        );
-        sessionStorage.removeItem(PASSCODE_STORAGE_KEY);
-      }
-    } catch {
-      setPasscodeError("Couldn't reach the server. Try again.");
-    } finally {
-      setCheckingPasscode(false);
-    }
-  }
-
-  function handleLogout() {
-    sessionStorage.removeItem(PASSCODE_STORAGE_KEY);
-    setPasscode("");
-    setPasscodeInput("");
-    setFiles([]);
-    setQueue([]);
-  }
+    if (passcode) loadMaterials(passcode);
+  }, [passcode, loadMaterials]);
 
   function addFilesToQueue(fileList: FileList | File[]) {
     const items: QueueItem[] = Array.from(fileList).map((file) => ({
@@ -143,7 +105,7 @@ export default function UploadPage() {
     const pathname = `materials/${subject}/${Date.now()}-${sanitizeFilename(item.file.name)}`;
 
     try {
-      await upload(pathname, item.file, {
+      const blob = await upload(pathname, item.file, {
         access: "public",
         handleUploadUrl: "/api/upload",
         clientPayload: JSON.stringify({ passcode, subject }),
@@ -156,12 +118,29 @@ export default function UploadPage() {
           );
         },
       });
+
+      await fetch("/api/materials", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-upload-passcode": passcode,
+        },
+        body: JSON.stringify({
+          pathname: blob.pathname,
+          url: blob.url,
+          subject,
+          title: titleFromFilename(item.file.name),
+          size: item.file.size,
+          uploadedBy: name || null,
+        }),
+      });
+
       setQueue((prev) =>
         prev.map((q) =>
           q.id === item.id ? { ...q, status: "done", progress: 100 } : q,
         ),
       );
-      loadFiles(passcode);
+      loadMaterials(passcode);
     } catch (error) {
       setQueue((prev) =>
         prev.map((q) =>
@@ -177,20 +156,16 @@ export default function UploadPage() {
     }
   }
 
-  async function handleDelete(file: UploadedFile) {
-    if (!confirm(`Delete "${filenameFromPathname(file.pathname)}"? This can't be undone.`)) {
+  async function handleDelete(material: MaterialRecord) {
+    if (!confirm(`Delete "${material.title}"? This can't be undone.`)) {
       return;
     }
-    const res = await fetch("/api/upload/delete", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-upload-passcode": passcode,
-      },
-      body: JSON.stringify({ url: file.url }),
+    const res = await fetch(`/api/materials/${material.id}`, {
+      method: "DELETE",
+      headers: { "x-upload-passcode": passcode },
     });
     if (res.ok) {
-      setFiles((prev) => prev.filter((f) => f.url !== file.url));
+      setMaterials((prev) => prev.filter((m) => m.id !== material.id));
     }
   }
 
@@ -254,9 +229,9 @@ export default function UploadPage() {
       <main className="flex-1">
         <div className="mx-auto max-w-4xl px-5 py-16">
           <PreviewBanner>
-            Files are stored in Vercel Blob and organized by subject. This
-            page is protected by a shared passcode until real teacher
-            login is built.
+            Files are stored in Vercel Blob with details in a small
+            database. This page is protected by a shared passcode until
+            real teacher login is built.
           </PreviewBanner>
 
           <div className="mt-8 flex items-start justify-between gap-4">
@@ -269,34 +244,54 @@ export default function UploadPage() {
               </h1>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="rounded-full border border-navy/15 px-4 py-2 text-xs font-semibold text-navy/60 hover:bg-navy/5"
             >
               Log out
             </button>
           </div>
 
-          <div className="mt-8">
-            <label className="text-sm font-semibold text-navy">Subject</label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {SUBJECTS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSubject(s)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    subject === s
-                      ? "bg-navy text-cream"
-                      : "bg-navy/5 text-navy/70 hover:bg-navy/10"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+          <Link
+            href="/review"
+            className="mt-3 inline-block text-sm font-medium text-saffron-dark hover:underline"
+          >
+            Go to review queue →
+          </Link>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-sm font-semibold text-navy">
+                Your name (optional)
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Harpreet Kaur"
+                className="mt-2 w-full rounded-full border border-navy/15 bg-cream px-4 py-2 text-sm outline-none transition focus:border-saffron"
+              />
             </div>
-            <p className="mt-2 text-xs text-navy/50">
-              Applies to files you upload next.
-            </p>
+            <div>
+              <label className="text-sm font-semibold text-navy">
+                Subject
+              </label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {SUBJECTS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSubject(s)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                      subject === s
+                        ? "bg-navy text-cream"
+                        : "bg-navy/5 text-navy/70 hover:bg-navy/10"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div
@@ -393,40 +388,41 @@ export default function UploadPage() {
 
           <div className="mt-14">
             <h2 className="font-heading text-lg font-bold text-navy">
-              Uploaded Materials
+              Your Uploads
             </h2>
-            {filesLoading ? (
+            {materialsLoading ? (
               <p className="mt-4 text-sm text-navy/50">Loading…</p>
-            ) : files.length === 0 ? (
+            ) : materials.length === 0 ? (
               <p className="mt-4 text-sm text-navy/50">
                 Nothing uploaded yet.
               </p>
             ) : (
               <ul className="mt-4 divide-y divide-navy/10 overflow-hidden rounded-2xl border border-navy/10 bg-cream">
-                {files.map((file) => (
+                {materials.map((material) => (
                   <li
-                    key={file.url}
+                    key={material.id}
                     className="flex items-center gap-3 px-5 py-4"
                   >
                     <span className="rounded-full bg-navy/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-navy/60">
-                      {subjectFromPathname(file.pathname)}
+                      {material.subject}
                     </span>
                     <span className="rounded-full bg-saffron/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-saffron-dark">
-                      {inferKind(file.pathname)}
+                      {inferKind(material.pathname)}
                     </span>
                     <a
-                      href={file.url}
+                      href={material.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 truncate text-sm font-medium text-navy hover:underline"
                     >
-                      {filenameFromPathname(file.pathname)}
+                      {material.title}
                     </a>
+                    <StatusBadge status={material.status} />
                     <span className="hidden text-xs text-navy/40 sm:inline">
-                      {formatBytes(file.size)}
+                      {formatBytes(material.size)}
                     </span>
                     <button
-                      onClick={() => handleDelete(file)}
+                      onClick={() => handleDelete(material)}
                       className="text-navy/40 transition hover:text-red-600"
                       aria-label="Delete"
                     >

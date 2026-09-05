@@ -46,7 +46,9 @@ export function filenameFromPathname(pathname: string): string {
   return parts[parts.length - 1];
 }
 
-export function subjectFromPathname(pathname: string): string {
-  const parts = pathname.split("/");
-  return parts.length > 2 ? parts[1] : "Uncategorized";
+export function titleFromFilename(filename: string): string {
+  const dot = filename.lastIndexOf(".");
+  const base = dot > 0 ? filename.slice(0, dot) : filename;
+  const withSpaces = base.replace(/[-_]+/g, " ").trim();
+  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
 }
