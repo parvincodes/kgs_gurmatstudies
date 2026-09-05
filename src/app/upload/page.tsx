@@ -23,7 +23,7 @@ const MAX_CONCURRENT_UPLOADS = 3;
 type QueueItem = {
   id: string;
   file: File;
-  status: "pending" | "uploading" | "done" | "error";
+  status: "pending" | "uploading" | "saving" | "done" | "error";
   progress: number;
   error?: string;
 };
@@ -119,7 +119,13 @@ export default function UploadPage() {
         },
       });
 
-      await fetch("/api/materials", {
+      setQueue((prev) =>
+        prev.map((q) =>
+          q.id === item.id ? { ...q, status: "saving", progress: 100 } : q,
+        ),
+      );
+
+      const saveRes = await fetch("/api/materials", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -134,6 +140,15 @@ export default function UploadPage() {
           uploadedBy: name || null,
         }),
       });
+
+      if (!saveRes.ok) {
+        const data = await saveRes.json().catch(() => null);
+        throw new Error(
+          data?.error
+            ? `File uploaded, but details weren't saved: ${data.error}`
+            : "File uploaded, but details weren't saved.",
+        );
+      }
 
       setQueue((prev) =>
         prev.map((q) =>
@@ -364,15 +379,37 @@ export default function UploadPage() {
                     {formatBytes(item.file.size)}
                   </span>
                   {item.status === "uploading" && (
-                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-navy/10">
-                      <div
-                        className="h-full rounded-full bg-saffron transition-all"
-                        style={{ width: `${item.progress}%` }}
-                      />
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-navy/10">
+                        <div
+                          className="h-full rounded-full bg-saffron transition-all"
+                          style={{ width: `${item.progress}%` }}
+                        />
+                      </div>
+                      <span className="w-9 text-right text-xs tabular-nums text-navy/50">
+                        {Math.round(item.progress)}%
+                      </span>
                     </div>
                   )}
+                  {item.status === "saving" && (
+                    <span className="text-xs font-medium text-navy/50">
+                      Saving details…
+                    </span>
+                  )}
                   {item.status === "done" && (
-                    <span className="text-xs font-semibold text-green-700">
+                    <span className="flex items-center gap-1 text-xs font-semibold text-green-700">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
                       Uploaded
                     </span>
                   )}
