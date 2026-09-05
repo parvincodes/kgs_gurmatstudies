@@ -30,6 +30,8 @@ export default function FilePreviewPanel({
   if (!file) return null;
 
   const kind = inferKind(file.pathname);
+  const inlineUrl = `/api/preview?url=${encodeURIComponent(file.url)}`;
+  const openInNewTabHref = kind === "PDF" ? inlineUrl : file.url;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -47,7 +49,7 @@ export default function FilePreviewPanel({
             <p className="text-xs text-navy/50">{kind}</p>
           </div>
           <a
-            href={file.url}
+            href={openInNewTabHref}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-full border border-navy/15 px-3 py-1.5 text-xs font-semibold text-navy/70 hover:bg-navy/5"
@@ -68,7 +70,7 @@ export default function FilePreviewPanel({
         <div className="flex-1 overflow-hidden bg-navy/5">
           {kind === "PDF" && (
             <iframe
-              src={file.url}
+              src={inlineUrl}
               title={file.title}
               className="h-full w-full border-0"
             />
