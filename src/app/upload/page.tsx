@@ -16,6 +16,7 @@ import {
 } from "@/lib/upload-helpers";
 
 const PASSCODE_STORAGE_KEY = "kgs_upload_passcode";
+const MAX_CONCURRENT_UPLOADS = 3;
 
 type QueueItem = {
   id: string;
@@ -46,6 +47,8 @@ export default function UploadPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const pendingUploadsRef = useRef<QueueItem[]>([]);
+  const activeUploadsRef = useRef(0);
 
   const loadFiles = useCallback(async (pass: string) => {
     setFilesLoading(true);
@@ -113,8 +116,22 @@ export default function UploadPage() {
       progress: 0,
     }));
     setQueue((prev) => [...prev, ...items]);
-    for (const item of items) {
-      void uploadItem(item);
+    pendingUploadsRef.current.push(...items);
+    pumpUploadQueue();
+  }
+
+  function pumpUploadQueue() {
+    while (
+      activeUploadsRef.current < MAX_CONCURRENT_UPLOADS &&
+      pendingUploadsRef.current.length > 0
+    ) {
+      const next = pendingUploadsRef.current.shift();
+      if (!next) break;
+      activeUploadsRef.current += 1;
+      uploadItem(next).finally(() => {
+        activeUploadsRef.current -= 1;
+        pumpUploadQueue();
+      });
     }
   }
 
@@ -130,6 +147,7 @@ export default function UploadPage() {
         access: "public",
         handleUploadUrl: "/api/upload",
         clientPayload: JSON.stringify({ passcode, subject }),
+        multipart: item.file.size > 100 * 1024 * 1024,
         onUploadProgress: ({ percentage }) => {
           setQueue((prev) =>
             prev.map((q) =>
