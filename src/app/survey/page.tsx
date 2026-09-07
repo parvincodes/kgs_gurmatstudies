@@ -1,9 +1,19 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
-import { PRACTICE_HABITS, PRIORITY_TOPICS, MAX_PRIORITY_TOPICS } from "@/lib/survey-options";
+import {
+  OTHER,
+  HOPES,
+  MAX_HOPES,
+  DISCUSSION_TOPICS,
+  IDENTITY_STRUGGLES,
+  PRACTICE_HABITS,
+  PRIORITY_TOPICS,
+  MAX_PRIORITY_TOPICS,
+  isValidSelection,
+} from "@/lib/survey-options";
 
 function MinimalHeader() {
   return (
@@ -18,12 +28,86 @@ function MinimalHeader() {
   );
 }
 
+function toggleIn(setList: Dispatch<SetStateAction<string[]>>, option: string, max?: number) {
+  setList((prev) => {
+    if (prev.includes(option)) return prev.filter((p) => p !== option);
+    if (max !== undefined && prev.length >= max) return prev;
+    return [...prev, option];
+  });
+}
+
+function CheckboxGroup({
+  options,
+  selected,
+  onToggle,
+  max,
+  allowOther,
+  otherText,
+  onOtherTextChange,
+}: {
+  options: string[];
+  selected: string[];
+  onToggle: (option: string) => void;
+  max?: number;
+  allowOther?: boolean;
+  otherText?: string;
+  onOtherTextChange?: (value: string) => void;
+}) {
+  const allOptions = allowOther ? [...options, OTHER] : options;
+  return (
+    <div className="mt-3 space-y-2">
+      {allOptions.map((option) => {
+        const checked = selected.includes(option);
+        const disabled = !checked && max !== undefined && selected.length >= max;
+        return (
+          <div key={option}>
+            <label
+              className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition ${
+                checked
+                  ? "border-saffron bg-saffron/10 text-navy"
+                  : disabled
+                    ? "border-navy/10 text-navy/35"
+                    : "border-navy/15 text-navy/80 hover:bg-navy/5"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={disabled}
+                onChange={() => onToggle(option)}
+                className="mt-0.5"
+              />
+              {option === OTHER ? "Other (please specify)" : option}
+            </label>
+            {option === OTHER && checked && (
+              <input
+                type="text"
+                value={otherText ?? ""}
+                onChange={(e) => onOtherTextChange?.(e.target.value)}
+                placeholder="Please specify…"
+                className="mt-2 w-full rounded-full border border-navy/15 bg-cream px-4 py-2 text-sm outline-none transition focus:border-saffron"
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SurveyPage() {
   const [childName, setChildName] = useState("");
   const [parentName, setParentName] = useState("");
-  const [hopes, setHopes] = useState("");
-  const [discussionTopics, setDiscussionTopics] = useState("");
-  const [identityStruggles, setIdentityStruggles] = useState("");
+
+  const [hopesSelected, setHopesSelected] = useState<string[]>([]);
+  const [hopesOther, setHopesOther] = useState("");
+
+  const [discussionSelected, setDiscussionSelected] = useState<string[]>([]);
+  const [discussionOther, setDiscussionOther] = useState("");
+
+  const [strugglesSelected, setStrugglesSelected] = useState<string[]>([]);
+  const [strugglesOther, setStrugglesOther] = useState("");
+
   const [practiceHabits, setPracticeHabits] = useState<string[]>([]);
   const [priorityTopics, setPriorityTopics] = useState<string[]>([]);
 
@@ -31,33 +115,21 @@ export default function SurveyPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  function toggleHabit(option: string) {
-    setPracticeHabits((prev) =>
-      prev.includes(option) ? prev.filter((p) => p !== option) : [...prev, option],
-    );
-  }
-
-  function toggleTopic(option: string) {
-    setPriorityTopics((prev) => {
-      if (prev.includes(option)) return prev.filter((p) => p !== option);
-      if (prev.length >= MAX_PRIORITY_TOPICS) return prev;
-      return [...prev, option];
-    });
-  }
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
 
     if (
       !childName.trim() ||
-      !hopes.trim() ||
-      !discussionTopics.trim() ||
-      !identityStruggles.trim() ||
+      !isValidSelection(hopesSelected, hopesOther) ||
+      !isValidSelection(discussionSelected, discussionOther) ||
+      !isValidSelection(strugglesSelected, strugglesOther) ||
       practiceHabits.length === 0 ||
       priorityTopics.length === 0
     ) {
-      setError("Please answer all five questions before submitting.");
+      setError(
+        "Please answer all five questions — if you picked \"Other,\" add a quick note too.",
+      );
       return;
     }
 
@@ -69,9 +141,12 @@ export default function SurveyPage() {
         body: JSON.stringify({
           childName,
           parentName,
-          hopes,
-          discussionTopics,
-          identityStruggles,
+          hopesSelected,
+          hopesOther,
+          discussionSelected,
+          discussionOther,
+          strugglesSelected,
+          strugglesOther,
           practiceHabits,
           priorityTopics,
         }),
@@ -163,27 +238,34 @@ export default function SurveyPage() {
 
             <div>
               <label className="text-sm font-semibold text-navy">
-                1. What do you hope your child takes away from this class by
-                the end of the year?
+                1. What do you hope your child takes away from this class
+                this year?
               </label>
-              <textarea
-                value={hopes}
-                onChange={(e) => setHopes(e.target.value)}
-                rows={3}
-                className="mt-2 w-full rounded-2xl border border-navy/15 bg-cream px-4 py-3 text-sm outline-none transition focus:border-saffron"
+              <p className="mt-1 text-xs text-navy/50">Choose up to two.</p>
+              <CheckboxGroup
+                options={HOPES}
+                selected={hopesSelected}
+                onToggle={(o) => toggleIn(setHopesSelected, o, MAX_HOPES)}
+                max={MAX_HOPES}
+                allowOther
+                otherText={hopesOther}
+                onOtherTextChange={setHopesOther}
               />
             </div>
 
             <div>
               <label className="text-sm font-semibold text-navy">
                 2. What kind of questions or discussions do the kids have
-                with you?
+                with you at home?
               </label>
-              <textarea
-                value={discussionTopics}
-                onChange={(e) => setDiscussionTopics(e.target.value)}
-                rows={2}
-                className="mt-2 w-full rounded-2xl border border-navy/15 bg-cream px-4 py-3 text-sm outline-none transition focus:border-saffron"
+              <p className="mt-1 text-xs text-navy/50">Check all that apply.</p>
+              <CheckboxGroup
+                options={DISCUSSION_TOPICS}
+                selected={discussionSelected}
+                onToggle={(o) => toggleIn(setDiscussionSelected, o)}
+                allowOther
+                otherText={discussionOther}
+                onOtherTextChange={setDiscussionOther}
               />
             </div>
 
@@ -192,14 +274,14 @@ export default function SurveyPage() {
                 3. Do they struggle with anything related to their identity
                 or Sikhi?
               </label>
-              <p className="mt-1 text-xs text-navy/50">
-                It&apos;s fine to answer &quot;not that I&apos;ve noticed.&quot;
-              </p>
-              <textarea
-                value={identityStruggles}
-                onChange={(e) => setIdentityStruggles(e.target.value)}
-                rows={2}
-                className="mt-2 w-full rounded-2xl border border-navy/15 bg-cream px-4 py-3 text-sm outline-none transition focus:border-saffron"
+              <p className="mt-1 text-xs text-navy/50">Check all that apply.</p>
+              <CheckboxGroup
+                options={IDENTITY_STRUGGLES}
+                selected={strugglesSelected}
+                onToggle={(o) => toggleIn(setStrugglesSelected, o)}
+                allowOther
+                otherText={strugglesOther}
+                onOtherTextChange={setStrugglesOther}
               />
             </div>
 
@@ -208,29 +290,11 @@ export default function SurveyPage() {
                 4. Which of these does your child currently do?
               </label>
               <p className="mt-1 text-xs text-navy/50">Check all that apply.</p>
-              <div className="mt-3 space-y-2">
-                {PRACTICE_HABITS.map((option) => {
-                  const checked = practiceHabits.includes(option);
-                  return (
-                    <label
-                      key={option}
-                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition ${
-                        checked
-                          ? "border-saffron bg-saffron/10 text-navy"
-                          : "border-navy/15 text-navy/80 hover:bg-navy/5"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleHabit(option)}
-                        className="mt-0.5"
-                      />
-                      {option}
-                    </label>
-                  );
-                })}
-              </div>
+              <CheckboxGroup
+                options={PRACTICE_HABITS}
+                selected={practiceHabits}
+                onToggle={(o) => toggleIn(setPracticeHabits, o)}
+              />
             </div>
 
             <div>
@@ -238,33 +302,12 @@ export default function SurveyPage() {
                 5. Which topics matter most for your child this year?
               </label>
               <p className="mt-1 text-xs text-navy/50">Choose up to two.</p>
-              <div className="mt-3 space-y-2">
-                {PRIORITY_TOPICS.map((option) => {
-                  const checked = priorityTopics.includes(option);
-                  const disabled = !checked && priorityTopics.length >= MAX_PRIORITY_TOPICS;
-                  return (
-                    <label
-                      key={option}
-                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition ${
-                        checked
-                          ? "border-saffron bg-saffron/10 text-navy"
-                          : disabled
-                            ? "border-navy/10 text-navy/35"
-                            : "border-navy/15 text-navy/80 hover:bg-navy/5"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={disabled}
-                        onChange={() => toggleTopic(option)}
-                        className="mt-0.5"
-                      />
-                      {option}
-                    </label>
-                  );
-                })}
-              </div>
+              <CheckboxGroup
+                options={PRIORITY_TOPICS}
+                selected={priorityTopics}
+                onToggle={(o) => toggleIn(setPriorityTopics, o, MAX_PRIORITY_TOPICS)}
+                max={MAX_PRIORITY_TOPICS}
+              />
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}

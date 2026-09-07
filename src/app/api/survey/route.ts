@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isValidPasscode } from "@/lib/passcode";
 import { createSurveyResponse, listSurveyResponses } from "@/lib/survey-db";
-import { MAX_PRIORITY_TOPICS } from "@/lib/survey-options";
+import { MAX_HOPES, MAX_PRIORITY_TOPICS, isValidSelection } from "@/lib/survey-options";
 
 function trimmedOrNull(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -17,22 +17,28 @@ export async function POST(request: Request): Promise<NextResponse> {
   const body = await request.json();
 
   const childName = typeof body.childName === "string" ? body.childName.trim() : "";
-  const hopes = typeof body.hopes === "string" ? body.hopes.trim() : "";
-  const discussionTopics = trimmedOrNull(body.discussionTopics);
-  const identityStruggles = trimmedOrNull(body.identityStruggles);
+  const hopesSelected = stringArray(body.hopesSelected, MAX_HOPES);
+  const hopesOther = trimmedOrNull(body.hopesOther);
+  const discussionSelected = stringArray(body.discussionSelected);
+  const discussionOther = trimmedOrNull(body.discussionOther);
+  const strugglesSelected = stringArray(body.strugglesSelected);
+  const strugglesOther = trimmedOrNull(body.strugglesOther);
   const practiceHabits = stringArray(body.practiceHabits);
   const priorityTopics = stringArray(body.priorityTopics, MAX_PRIORITY_TOPICS);
 
   if (
     !childName ||
-    !hopes ||
-    !discussionTopics ||
-    !identityStruggles ||
+    !isValidSelection(hopesSelected, hopesOther) ||
+    !isValidSelection(discussionSelected, discussionOther) ||
+    !isValidSelection(strugglesSelected, strugglesOther) ||
     practiceHabits.length === 0 ||
     priorityTopics.length === 0
   ) {
     return NextResponse.json(
-      { error: "Please answer all five questions before submitting." },
+      {
+        error:
+          "Please answer all five questions — if you picked \"Other,\" add a quick note too.",
+      },
       { status: 400 },
     );
   }
@@ -41,9 +47,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     await createSurveyResponse({
       childName,
       parentName: trimmedOrNull(body.parentName),
-      hopes,
-      discussionTopics,
-      identityStruggles,
+      hopesSelected,
+      hopesOther,
+      discussionSelected,
+      discussionOther,
+      strugglesSelected,
+      strugglesOther,
       practiceHabits,
       priorityTopics,
     });
