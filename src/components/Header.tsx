@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Logo from "./Logo";
 
+const STUDY_LINKS = [
+  { href: "/materials", label: "Browse Materials" },
+  { href: "/upload", label: "Upload" },
+  { href: "/review", label: "Review" },
+];
+
 const NAV_LINKS = [
-  { href: "/materials", label: "Study Materials" },
   { href: "/#program", label: "This Year's Program" },
   { href: "/#community", label: "Community & Seva" },
   { href: "/#contact", label: "Contact" },
@@ -13,6 +18,19 @@ const NAV_LINKS = [
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const [studyOpen, setStudyOpen] = useState(false);
+  const [mobileStudyOpen, setMobileStudyOpen] = useState(false);
+  const studyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (studyRef.current && !studyRef.current.contains(e.target as Node)) {
+        setStudyOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-navy/10 bg-cream/90 backdrop-blur">
@@ -25,6 +43,43 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
+          <div className="relative" ref={studyRef}>
+            <button
+              type="button"
+              onClick={() => setStudyOpen((v) => !v)}
+              aria-expanded={studyOpen}
+              className="flex items-center gap-1.5 text-sm font-medium text-navy/80 transition hover:text-saffron-dark"
+            >
+              Study Materials
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                className={`transition-transform ${studyOpen ? "rotate-180" : ""}`}
+              >
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {studyOpen && (
+              <div className="absolute left-0 top-full mt-2 w-52 overflow-hidden rounded-xl border border-navy/10 bg-cream shadow-lg">
+                {STUDY_LINKS.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setStudyOpen(false)}
+                    className="block px-4 py-2.5 text-sm font-medium text-navy/80 transition hover:bg-navy/5 hover:text-saffron-dark"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -61,6 +116,40 @@ export default function Header() {
 
       {open && (
         <nav className="flex flex-col gap-1 border-t border-navy/10 bg-cream px-5 pb-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileStudyOpen((v) => !v)}
+            aria-expanded={mobileStudyOpen}
+            className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm font-medium text-navy/80 hover:bg-navy/5"
+          >
+            Study Materials
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              className={`transition-transform ${mobileStudyOpen ? "rotate-180" : ""}`}
+            >
+              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          {mobileStudyOpen && (
+            <div className="flex flex-col gap-1 pb-1 pl-4">
+              {STUDY_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-lg px-2 py-2 text-sm text-navy/70 hover:bg-navy/5"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          )}
+
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
