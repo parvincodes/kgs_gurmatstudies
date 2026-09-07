@@ -10,6 +10,14 @@ Built with [Next.js](https://nextjs.org) (App Router) and
 
 ## Status: Early preview — gathering feedback
 
+- **Site-wide gate**: the entire portal — every page and API route —
+  requires the shared passcode before anything loads, enforced in
+  `src/proxy.ts` (Next.js's server-side request proxy, formerly called
+  "middleware"). Unauthenticated visitors are redirected to `/enter`;
+  a signed cookie (a hash of the passcode, not the passcode itself)
+  remembers them for 30 days. This uses the same `UPLOAD_PASSCODE` as
+  `/upload` and `/review` below, so entering it once at `/enter` also
+  saves it for those pages — no second prompt.
 - **`/`** — home page: program overview, community & seva, and links
   into the portal preview.
 - **`/materials`** — searchable, filterable study materials library.
@@ -57,12 +65,14 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required for | Where to get it |
 | --- | --- | --- |
-| `UPLOAD_PASSCODE` | `/upload`, `/review` | Pick any string — this is the shared teacher passcode. |
+| `UPLOAD_PASSCODE` | Whole site, plus `/upload`, `/review` | Pick any string — this is the shared passcode for the entire portal (see `/enter` and `src/proxy.ts`) and doubles as the teacher passcode. |
 | `BLOB_READ_WRITE_TOKEN` | `/upload` | Vercel dashboard → Storage → connect a Blob store to this project. Locally, run `vercel env pull .env.local` after connecting, or copy the token manually. **When creating the store, you must choose "Public" access — this cannot be changed later, and our code uploads with `access: "public"` everywhere.** A private store causes every upload to fail with a confusing CORS error in the browser rather than a clear message, because Vercel's blob endpoint doesn't send CORS headers on that particular rejection. |
 | `DATABASE_URL` | `/upload`, `/review` | Vercel dashboard → Storage → connect a Neon Postgres database to this project (this is what shows up as "Postgres" in the Storage tab now — Vercel's own Postgres product was retired in favor of Neon). Locally, run `vercel env pull .env.local`, or point it at a local Postgres instance. The `materials` table is created automatically on first use — no migration step needed. |
 
-Without these, every other page still works — `/upload` and `/review`
-will show a clear error instead of crashing.
+`UPLOAD_PASSCODE` gates the whole site, so without it set, nothing is
+reachable — there's no passcode that will ever satisfy the gate.
+`BLOB_READ_WRITE_TOKEN` and `DATABASE_URL` are more forgiving: without
+them, `/upload` and `/review` show a clear error instead of crashing.
 
 ## Roadmap — next phase
 
