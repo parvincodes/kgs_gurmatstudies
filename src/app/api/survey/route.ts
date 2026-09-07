@@ -18,10 +18,21 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const childName = typeof body.childName === "string" ? body.childName.trim() : "";
   const hopes = typeof body.hopes === "string" ? body.hopes.trim() : "";
+  const discussionTopics = trimmedOrNull(body.discussionTopics);
+  const identityStruggles = trimmedOrNull(body.identityStruggles);
+  const practiceHabits = stringArray(body.practiceHabits);
+  const priorityTopics = stringArray(body.priorityTopics, MAX_PRIORITY_TOPICS);
 
-  if (!childName || !hopes) {
+  if (
+    !childName ||
+    !hopes ||
+    !discussionTopics ||
+    !identityStruggles ||
+    practiceHabits.length === 0 ||
+    priorityTopics.length === 0
+  ) {
     return NextResponse.json(
-      { error: "Please fill in your child's name and question 1." },
+      { error: "Please answer all five questions before submitting." },
       { status: 400 },
     );
   }
@@ -31,10 +42,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       childName,
       parentName: trimmedOrNull(body.parentName),
       hopes,
-      discussionTopics: trimmedOrNull(body.discussionTopics),
-      identityStruggles: trimmedOrNull(body.identityStruggles),
-      practiceHabits: stringArray(body.practiceHabits),
-      priorityTopics: stringArray(body.priorityTopics, MAX_PRIORITY_TOPICS),
+      discussionTopics,
+      identityStruggles,
+      practiceHabits,
+      priorityTopics,
     });
     return NextResponse.json({ ok: true });
   } catch (error) {

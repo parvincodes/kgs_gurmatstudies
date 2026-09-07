@@ -49,8 +49,15 @@ export default function SurveyPage() {
     e.preventDefault();
     setError(null);
 
-    if (!childName.trim() || !hopes.trim()) {
-      setError("Please fill in your child's name and question 1.");
+    if (
+      !childName.trim() ||
+      !hopes.trim() ||
+      !discussionTopics.trim() ||
+      !identityStruggles.trim() ||
+      practiceHabits.length === 0 ||
+      priorityTopics.length === 0
+    ) {
+      setError("Please answer all five questions before submitting.");
       return;
     }
 
@@ -172,7 +179,6 @@ export default function SurveyPage() {
                 2. What kind of questions or discussions do the kids have
                 with you?
               </label>
-              <p className="mt-1 text-xs text-navy/50">Optional.</p>
               <textarea
                 value={discussionTopics}
                 onChange={(e) => setDiscussionTopics(e.target.value)}
@@ -187,7 +193,7 @@ export default function SurveyPage() {
                 or Sikhi?
               </label>
               <p className="mt-1 text-xs text-navy/50">
-                Optional — totally fine to say no, or to skip this one.
+                It&apos;s fine to answer &quot;not that I&apos;ve noticed.&quot;
               </p>
               <textarea
                 value={identityStruggles}
