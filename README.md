@@ -39,6 +39,11 @@ Built with [Next.js](https://nextjs.org) (App Router) and
   preview panel. This is basic keyword search over existing metadata,
   not an AI that reads inside documents — see the roadmap below for
   what a real "ask questions about the content" version would need.
+- **`/survey`** — a short parent-input form (public, no passcode)
+  gauging what parents hope their child gets from this year's class,
+  meant to be shared via a QR code at orientation. **`/survey/results`**
+  (passcode-gated) tallies the multiple-choice question and lists every
+  individual response.
 
 The goal of this stage is to share something real with students,
 teachers, and parents and gather feedback before building full auth.
