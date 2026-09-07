@@ -81,19 +81,6 @@ export default function SurveyResultsPage() {
     );
   }
 
-  const priorityCounts = new Map<string, number>();
-  responses.forEach((r) =>
-    r.priorities.forEach((p) => priorityCounts.set(p, (priorityCounts.get(p) ?? 0) + 1)),
-  );
-  const sortedPriorities = [...priorityCounts.entries()].sort((a, b) => b[1] - a[1]);
-  const maxCount = sortedPriorities[0]?.[1] ?? 1;
-
-  const engagementScores = responses.map((r) => r.engagement).filter((e): e is number => e != null);
-  const avgEngagement =
-    engagementScores.length > 0
-      ? (engagementScores.reduce((a, b) => a + b, 0) / engagementScores.length).toFixed(1)
-      : "—";
-
   return (
     <>
       <Header />
@@ -114,93 +101,57 @@ export default function SurveyResultsPage() {
             </p>
           ) : (
             <>
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-navy/10 bg-cream p-6">
-                  <p className="text-3xl font-bold text-navy">{responses.length}</p>
-                  <p className="mt-1 text-sm text-navy/60">responses so far</p>
-                </div>
-                <div className="rounded-2xl border border-navy/10 bg-cream p-6">
-                  <p className="text-3xl font-bold text-navy">{avgEngagement} / 5</p>
-                  <p className="mt-1 text-sm text-navy/60">average engagement rating</p>
-                </div>
+              <div className="mt-8 rounded-2xl border border-navy/10 bg-cream p-6">
+                <p className="text-3xl font-bold text-navy">{responses.length}</p>
+                <p className="mt-1 text-sm text-navy/60">responses so far</p>
               </div>
 
-              <div className="mt-8">
-                <h2 className="font-heading text-lg font-bold text-navy">
-                  What parents want most
-                </h2>
-                <div className="mt-4 space-y-3">
-                  {sortedPriorities.map(([priority, count]) => (
-                    <div key={priority}>
-                      <div className="flex items-baseline justify-between text-sm">
-                        <span className="text-navy/80">{priority}</span>
-                        <span className="font-semibold text-navy">{count}</span>
-                      </div>
-                      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-navy/10">
-                        <div
-                          className="h-full rounded-full bg-saffron"
-                          style={{ width: `${(count / maxCount) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-12">
-                <h2 className="font-heading text-lg font-bold text-navy">
-                  Individual responses
-                </h2>
-                <div className="mt-4 space-y-4">
-                  {responses.map((r) => (
-                    <div
-                      key={r.id}
-                      className="rounded-2xl border border-navy/10 bg-cream p-6"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-heading text-base font-bold text-navy">
-                          {r.childName}
-                        </p>
-                        <span className="text-xs text-navy/40">
-                          {r.parentName && `from ${r.parentName} · `}
-                          {new Date(r.submittedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-
-                      <p className="mt-3 text-sm text-navy/80">
-                        <span className="font-semibold">Hopes:</span> {r.hopes}
+              <div className="mt-8 space-y-4">
+                {responses.map((r) => (
+                  <div
+                    key={r.id}
+                    className="rounded-2xl border border-navy/10 bg-cream p-6"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-heading text-base font-bold text-navy">
+                        {r.childName}
                       </p>
-
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {r.priorities.map((p) => (
-                          <span
-                            key={p}
-                            className="rounded-full bg-saffron/15 px-2.5 py-1 text-xs text-saffron-dark"
-                          >
-                            {p}
-                          </span>
-                        ))}
-                        {r.engagement != null && (
-                          <span className="rounded-full bg-navy/5 px-2.5 py-1 text-xs text-navy/60">
-                            Engagement: {r.engagement}/5
-                          </span>
-                        )}
-                      </div>
-
-                      {r.relevanceIdea && (
-                        <p className="mt-3 text-sm text-navy/70">
-                          <span className="font-semibold">Would help:</span>{" "}
-                          {r.relevanceIdea}
-                        </p>
-                      )}
-                      {r.notes && (
-                        <p className="mt-2 text-sm text-navy/70">
-                          <span className="font-semibold">Notes:</span> {r.notes}
-                        </p>
-                      )}
+                      <span className="text-xs text-navy/40">
+                        {r.parentName && `from ${r.parentName} · `}
+                        {new Date(r.submittedAt).toLocaleDateString()}
+                      </span>
                     </div>
-                  ))}
-                </div>
+
+                    <p className="mt-3 text-sm text-navy/80">
+                      <span className="font-semibold">Hopes for this year:</span>{" "}
+                      {r.hopes}
+                    </p>
+                    {r.discussionTopics && (
+                      <p className="mt-2 text-sm text-navy/70">
+                        <span className="font-semibold">Discussions at home:</span>{" "}
+                        {r.discussionTopics}
+                      </p>
+                    )}
+                    {r.identityStruggles && (
+                      <p className="mt-2 text-sm text-navy/70">
+                        <span className="font-semibold">Identity / Sikhi struggles:</span>{" "}
+                        {r.identityStruggles}
+                      </p>
+                    )}
+                    {r.sikhiPractice && (
+                      <p className="mt-2 text-sm text-navy/70">
+                        <span className="font-semibold">How they practice Sikhi:</span>{" "}
+                        {r.sikhiPractice}
+                      </p>
+                    )}
+                    {r.relevanceIdea && (
+                      <p className="mt-2 text-sm text-navy/70">
+                        <span className="font-semibold">Would help:</span>{" "}
+                        {r.relevanceIdea}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             </>
           )}

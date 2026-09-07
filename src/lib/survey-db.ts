@@ -11,12 +11,18 @@ export function ensureSurveySchema(): Promise<void> {
           child_name TEXT NOT NULL,
           parent_name TEXT,
           hopes TEXT NOT NULL,
-          priorities TEXT[] NOT NULL DEFAULT '{}',
-          engagement INT,
+          discussion_topics TEXT,
+          identity_struggles TEXT,
+          sikhi_practice TEXT,
           relevance_idea TEXT,
-          notes TEXT,
           submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )`,
+        );
+        ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS discussion_topics TEXT;
+        ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS identity_struggles TEXT;
+        ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS sikhi_practice TEXT;
+        ALTER TABLE survey_responses DROP COLUMN IF EXISTS priorities;
+        ALTER TABLE survey_responses DROP COLUMN IF EXISTS engagement;
+        ALTER TABLE survey_responses DROP COLUMN IF EXISTS notes;`,
       )
       .then(() => undefined)
       .catch((error) => {
@@ -33,10 +39,10 @@ export type SurveyResponse = {
   childName: string;
   parentName: string | null;
   hopes: string;
-  priorities: string[];
-  engagement: number | null;
+  discussionTopics: string | null;
+  identityStruggles: string | null;
+  sikhiPractice: string | null;
   relevanceIdea: string | null;
-  notes: string | null;
   submittedAt: string;
 };
 
@@ -45,10 +51,10 @@ type SurveyRow = {
   child_name: string;
   parent_name: string | null;
   hopes: string;
-  priorities: string[];
-  engagement: number | null;
+  discussion_topics: string | null;
+  identity_struggles: string | null;
+  sikhi_practice: string | null;
   relevance_idea: string | null;
-  notes: string | null;
   submitted_at: string;
 };
 
@@ -58,10 +64,10 @@ function rowToResponse(row: SurveyRow): SurveyResponse {
     childName: row.child_name,
     parentName: row.parent_name,
     hopes: row.hopes,
-    priorities: row.priorities ?? [],
-    engagement: row.engagement,
+    discussionTopics: row.discussion_topics,
+    identityStruggles: row.identity_struggles,
+    sikhiPractice: row.sikhi_practice,
     relevanceIdea: row.relevance_idea,
-    notes: row.notes,
     submittedAt: row.submitted_at,
   };
 }
@@ -70,25 +76,25 @@ export async function createSurveyResponse(input: {
   childName: string;
   parentName: string | null;
   hopes: string;
-  priorities: string[];
-  engagement: number | null;
+  discussionTopics: string | null;
+  identityStruggles: string | null;
+  sikhiPractice: string | null;
   relevanceIdea: string | null;
-  notes: string | null;
 }): Promise<SurveyResponse> {
   await ensureSurveySchema();
   const result = await pool.query<SurveyRow>(
     `INSERT INTO survey_responses
-       (child_name, parent_name, hopes, priorities, engagement, relevance_idea, notes)
+       (child_name, parent_name, hopes, discussion_topics, identity_struggles, sikhi_practice, relevance_idea)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     [
       input.childName,
       input.parentName,
       input.hopes,
-      input.priorities,
-      input.engagement,
+      input.discussionTopics,
+      input.identityStruggles,
+      input.sikhiPractice,
       input.relevanceIdea,
-      input.notes,
     ],
   );
   return rowToResponse(result.rows[0]);

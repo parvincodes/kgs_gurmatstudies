@@ -2,36 +2,32 @@ import { NextResponse } from "next/server";
 import { isValidPasscode } from "@/lib/passcode";
 import { createSurveyResponse, listSurveyResponses } from "@/lib/survey-db";
 
-const MAX_PRIORITIES = 2;
+function trimmedOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = await request.json();
 
   const childName = typeof body.childName === "string" ? body.childName.trim() : "";
   const hopes = typeof body.hopes === "string" ? body.hopes.trim() : "";
-  const priorities = Array.isArray(body.priorities)
-    ? body.priorities.filter((p: unknown) => typeof p === "string").slice(0, MAX_PRIORITIES)
-    : [];
 
-  if (!childName || !hopes || priorities.length === 0) {
+  if (!childName || !hopes) {
     return NextResponse.json(
-      { error: "Please fill in your child's name, question 1, and at least one priority." },
+      { error: "Please fill in your child's name and question 1." },
       { status: 400 },
     );
   }
 
-  const engagement = Number.isInteger(body.engagement) ? body.engagement : null;
-
   try {
     await createSurveyResponse({
       childName,
-      parentName: typeof body.parentName === "string" ? body.parentName.trim() || null : null,
+      parentName: trimmedOrNull(body.parentName),
       hopes,
-      priorities,
-      engagement,
-      relevanceIdea:
-        typeof body.relevanceIdea === "string" ? body.relevanceIdea.trim() || null : null,
-      notes: typeof body.notes === "string" ? body.notes.trim() || null : null,
+      discussionTopics: trimmedOrNull(body.discussionTopics),
+      identityStruggles: trimmedOrNull(body.identityStruggles),
+      sikhiPractice: trimmedOrNull(body.sikhiPractice),
+      relevanceIdea: trimmedOrNull(body.relevanceIdea),
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
