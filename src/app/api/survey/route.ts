@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { isValidPasscode } from "@/lib/passcode";
 import { createSurveyResponse, listSurveyResponses } from "@/lib/survey-db";
+import { MAX_PRIORITY_TOPICS } from "@/lib/survey-options";
 
 function trimmedOrNull(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function stringArray(value: unknown, max?: number): string[] {
+  if (!Array.isArray(value)) return [];
+  const strings = value.filter((v): v is string => typeof v === "string");
+  return max ? strings.slice(0, max) : strings;
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -26,8 +33,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       hopes,
       discussionTopics: trimmedOrNull(body.discussionTopics),
       identityStruggles: trimmedOrNull(body.identityStruggles),
-      sikhiPractice: trimmedOrNull(body.sikhiPractice),
-      relevanceIdea: trimmedOrNull(body.relevanceIdea),
+      practiceHabits: stringArray(body.practiceHabits),
+      priorityTopics: stringArray(body.priorityTopics, MAX_PRIORITY_TOPICS),
     });
     return NextResponse.json({ ok: true });
   } catch (error) {

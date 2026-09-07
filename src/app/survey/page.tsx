@@ -1,8 +1,22 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Header from "@/components/Header";
+import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
+import { PRACTICE_HABITS, PRIORITY_TOPICS, MAX_PRIORITY_TOPICS } from "@/lib/survey-options";
+
+function MinimalHeader() {
+  return (
+    <header className="border-b border-navy/10 bg-cream/90 px-5 py-4">
+      <div className="mx-auto flex max-w-2xl items-center gap-3">
+        <Logo size={36} />
+        <span className="font-heading text-base font-bold text-navy">
+          Parent&apos;s Orientation Survey
+        </span>
+      </div>
+    </header>
+  );
+}
 
 export default function SurveyPage() {
   const [childName, setChildName] = useState("");
@@ -10,12 +24,26 @@ export default function SurveyPage() {
   const [hopes, setHopes] = useState("");
   const [discussionTopics, setDiscussionTopics] = useState("");
   const [identityStruggles, setIdentityStruggles] = useState("");
-  const [sikhiPractice, setSikhiPractice] = useState("");
-  const [relevanceIdea, setRelevanceIdea] = useState("");
+  const [practiceHabits, setPracticeHabits] = useState<string[]>([]);
+  const [priorityTopics, setPriorityTopics] = useState<string[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  function toggleHabit(option: string) {
+    setPracticeHabits((prev) =>
+      prev.includes(option) ? prev.filter((p) => p !== option) : [...prev, option],
+    );
+  }
+
+  function toggleTopic(option: string) {
+    setPriorityTopics((prev) => {
+      if (prev.includes(option)) return prev.filter((p) => p !== option);
+      if (prev.length >= MAX_PRIORITY_TOPICS) return prev;
+      return [...prev, option];
+    });
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -37,8 +65,8 @@ export default function SurveyPage() {
           hopes,
           discussionTopics,
           identityStruggles,
-          sikhiPractice,
-          relevanceIdea,
+          practiceHabits,
+          priorityTopics,
         }),
       });
       if (res.ok) {
@@ -57,7 +85,7 @@ export default function SurveyPage() {
   if (done) {
     return (
       <>
-        <Header />
+        <MinimalHeader />
         <main className="flex flex-1 items-center justify-center px-5 py-24">
           <div className="w-full max-w-md rounded-3xl border border-navy/10 bg-cream-dark/40 p-10 text-center">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-saffron/15 text-saffron-dark">
@@ -81,7 +109,7 @@ export default function SurveyPage() {
 
   return (
     <>
-      <Header />
+      <MinimalHeader />
       <main className="flex-1">
         <div className="mx-auto max-w-2xl px-5 py-16">
           <p className="font-heading text-sm font-semibold uppercase tracking-wide text-saffron-dark">
@@ -171,30 +199,66 @@ export default function SurveyPage() {
 
             <div>
               <label className="text-sm font-semibold text-navy">
-                4. In what ways do they practice Sikhi — paath, seva, or
-                other ways they live out the values?
+                4. Which of these does your child currently do?
               </label>
-              <p className="mt-1 text-xs text-navy/50">Optional.</p>
-              <textarea
-                value={sikhiPractice}
-                onChange={(e) => setSikhiPractice(e.target.value)}
-                rows={2}
-                className="mt-2 w-full rounded-2xl border border-navy/15 bg-cream px-4 py-3 text-sm outline-none transition focus:border-saffron"
-              />
+              <p className="mt-1 text-xs text-navy/50">Check all that apply.</p>
+              <div className="mt-3 space-y-2">
+                {PRACTICE_HABITS.map((option) => {
+                  const checked = practiceHabits.includes(option);
+                  return (
+                    <label
+                      key={option}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition ${
+                        checked
+                          ? "border-saffron bg-saffron/10 text-navy"
+                          : "border-navy/15 text-navy/80 hover:bg-navy/5"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleHabit(option)}
+                        className="mt-0.5"
+                      />
+                      {option}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
               <label className="text-sm font-semibold text-navy">
-                5. What&apos;s one thing that could make this class feel
-                more relevant or meaningful to your child specifically?
+                5. Which topics matter most for your child this year?
               </label>
-              <p className="mt-1 text-xs text-navy/50">Optional.</p>
-              <textarea
-                value={relevanceIdea}
-                onChange={(e) => setRelevanceIdea(e.target.value)}
-                rows={2}
-                className="mt-2 w-full rounded-2xl border border-navy/15 bg-cream px-4 py-3 text-sm outline-none transition focus:border-saffron"
-              />
+              <p className="mt-1 text-xs text-navy/50">Choose up to two.</p>
+              <div className="mt-3 space-y-2">
+                {PRIORITY_TOPICS.map((option) => {
+                  const checked = priorityTopics.includes(option);
+                  const disabled = !checked && priorityTopics.length >= MAX_PRIORITY_TOPICS;
+                  return (
+                    <label
+                      key={option}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition ${
+                        checked
+                          ? "border-saffron bg-saffron/10 text-navy"
+                          : disabled
+                            ? "border-navy/10 text-navy/35"
+                            : "border-navy/15 text-navy/80 hover:bg-navy/5"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => toggleTopic(option)}
+                        className="mt-0.5"
+                      />
+                      {option}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}

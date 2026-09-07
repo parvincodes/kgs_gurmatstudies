@@ -13,16 +13,19 @@ export function ensureSurveySchema(): Promise<void> {
           hopes TEXT NOT NULL,
           discussion_topics TEXT,
           identity_struggles TEXT,
-          sikhi_practice TEXT,
-          relevance_idea TEXT,
+          practice_habits TEXT[] NOT NULL DEFAULT '{}',
+          priority_topics TEXT[] NOT NULL DEFAULT '{}',
           submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
         ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS discussion_topics TEXT;
         ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS identity_struggles TEXT;
-        ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS sikhi_practice TEXT;
+        ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS practice_habits TEXT[] NOT NULL DEFAULT '{}';
+        ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS priority_topics TEXT[] NOT NULL DEFAULT '{}';
         ALTER TABLE survey_responses DROP COLUMN IF EXISTS priorities;
         ALTER TABLE survey_responses DROP COLUMN IF EXISTS engagement;
-        ALTER TABLE survey_responses DROP COLUMN IF EXISTS notes;`,
+        ALTER TABLE survey_responses DROP COLUMN IF EXISTS notes;
+        ALTER TABLE survey_responses DROP COLUMN IF EXISTS sikhi_practice;
+        ALTER TABLE survey_responses DROP COLUMN IF EXISTS relevance_idea;`,
       )
       .then(() => undefined)
       .catch((error) => {
@@ -41,8 +44,8 @@ export type SurveyResponse = {
   hopes: string;
   discussionTopics: string | null;
   identityStruggles: string | null;
-  sikhiPractice: string | null;
-  relevanceIdea: string | null;
+  practiceHabits: string[];
+  priorityTopics: string[];
   submittedAt: string;
 };
 
@@ -53,8 +56,8 @@ type SurveyRow = {
   hopes: string;
   discussion_topics: string | null;
   identity_struggles: string | null;
-  sikhi_practice: string | null;
-  relevance_idea: string | null;
+  practice_habits: string[];
+  priority_topics: string[];
   submitted_at: string;
 };
 
@@ -66,8 +69,8 @@ function rowToResponse(row: SurveyRow): SurveyResponse {
     hopes: row.hopes,
     discussionTopics: row.discussion_topics,
     identityStruggles: row.identity_struggles,
-    sikhiPractice: row.sikhi_practice,
-    relevanceIdea: row.relevance_idea,
+    practiceHabits: row.practice_habits ?? [],
+    priorityTopics: row.priority_topics ?? [],
     submittedAt: row.submitted_at,
   };
 }
@@ -78,13 +81,13 @@ export async function createSurveyResponse(input: {
   hopes: string;
   discussionTopics: string | null;
   identityStruggles: string | null;
-  sikhiPractice: string | null;
-  relevanceIdea: string | null;
+  practiceHabits: string[];
+  priorityTopics: string[];
 }): Promise<SurveyResponse> {
   await ensureSurveySchema();
   const result = await pool.query<SurveyRow>(
     `INSERT INTO survey_responses
-       (child_name, parent_name, hopes, discussion_topics, identity_struggles, sikhi_practice, relevance_idea)
+       (child_name, parent_name, hopes, discussion_topics, identity_struggles, practice_habits, priority_topics)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     [
@@ -93,8 +96,8 @@ export async function createSurveyResponse(input: {
       input.hopes,
       input.discussionTopics,
       input.identityStruggles,
-      input.sikhiPractice,
-      input.relevanceIdea,
+      input.practiceHabits,
+      input.priorityTopics,
     ],
   );
   return rowToResponse(result.rows[0]);
