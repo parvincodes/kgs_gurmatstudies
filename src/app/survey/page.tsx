@@ -3,6 +3,7 @@
 import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
+import { useTeacherAuth } from "@/lib/useTeacherAuth";
 import {
   OTHER,
   HOPES,
@@ -116,7 +117,11 @@ export default function SurveyPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const { passcode, checkingPasscode, passcodeError, verifyPasscode } = useTeacherAuth();
+  const [previewInput, setPreviewInput] = useState("");
+
   const windowStatus = getSurveyWindowStatus();
+  const isTeacherPreview = windowStatus !== "open" && Boolean(passcode);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -167,7 +172,7 @@ export default function SurveyPage() {
     }
   }
 
-  if (windowStatus !== "open") {
+  if (windowStatus !== "open" && !passcode) {
     return (
       <>
         <MinimalHeader />
@@ -182,6 +187,35 @@ export default function SurveyPage() {
                 : `The ${SURVEY_LABEL} has closed.`}{" "}
               It runs {formatSurveyWindow()}.
             </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                verifyPasscode(previewInput);
+              }}
+              className="mt-8 border-t border-navy/10 pt-6"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-navy/40">
+                Teacher? Preview the questions early
+              </p>
+              <input
+                type="password"
+                value={previewInput}
+                onChange={(e) => setPreviewInput(e.target.value)}
+                placeholder="Passcode"
+                className="mt-3 w-full rounded-full border border-navy/15 bg-cream px-4 py-2.5 text-center text-sm outline-none transition focus:border-saffron"
+              />
+              {passcodeError && (
+                <p className="mt-2 text-sm text-red-600">{passcodeError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={checkingPasscode || !previewInput}
+                className="mt-3 w-full rounded-full bg-navy px-6 py-2.5 text-sm font-semibold text-cream transition hover:bg-navy-light disabled:opacity-50"
+              >
+                {checkingPasscode ? "Checking…" : "Preview"}
+              </button>
+            </form>
           </div>
         </main>
         <Footer />
@@ -219,6 +253,13 @@ export default function SurveyPage() {
       <MinimalHeader />
       <main className="flex-1">
         <div className="mx-auto max-w-2xl px-5 py-16">
+          {isTeacherPreview && (
+            <div className="mb-6 rounded-xl border border-navy/15 bg-navy/5 px-4 py-3 text-sm text-navy/70">
+              Teacher preview — parents can&apos;t see this yet. The survey{" "}
+              {windowStatus === "before" ? "opens" : "ran"} {formatSurveyWindow()}, and
+              submissions aren&apos;t accepted outside that window.
+            </div>
+          )}
           <p className="font-heading text-sm font-semibold uppercase tracking-wide text-saffron-dark">
             {SURVEY_LABEL} · 2026&ndash;27 Gurmat Class
           </p>
