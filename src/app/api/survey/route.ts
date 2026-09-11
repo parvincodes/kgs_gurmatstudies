@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { isValidPasscode } from "@/lib/passcode";
-import { createSurveyResponse, listSurveyResponses } from "@/lib/survey-db";
+import { createSurveyResponse, listSurveyResponses, DuplicateChildError } from "@/lib/survey-db";
 import { MAX_HOPES, MAX_PRIORITY_TOPICS, isValidSelection } from "@/lib/survey-options";
+import { SURVEY_WAVE, getSurveyWindowStatus, formatSurveyWindow } from "@/lib/survey-config";
 
 function trimmedOrNull(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -14,6 +15,19 @@ function stringArray(value: unknown, max?: number): string[] {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const windowStatus = getSurveyWindowStatus();
+  if (windowStatus !== "open") {
+    return NextResponse.json(
+      {
+        error:
+          windowStatus === "before"
+            ? `This survey isn't open yet. It runs ${formatSurveyWindow()}.`
+            : `This survey has closed. It ran ${formatSurveyWindow()}.`,
+      },
+      { status: 403 },
+    );
+  }
+
   const body = await request.json();
 
   const childName = typeof body.childName === "string" ? body.childName.trim() : "";
@@ -45,6 +59,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   try {
     await createSurveyResponse({
+      surveyWave: SURVEY_WAVE,
       childName,
       parentName: trimmedOrNull(body.parentName),
       hopesSelected,
@@ -58,6 +73,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof DuplicateChildError) {
+      return NextResponse.json(
+        {
+          error: `A response for ${childName} has already been submitted for this survey. If that's a mistake, please reach out directly.`,
+        },
+        { status: 409 },
+      );
+    }
     console.error("[api/survey] POST failed:", error);
     return NextResponse.json(
       { error: "Something went wrong saving your response. Please try again." },
@@ -72,8 +95,11 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid passcode" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const wave = searchParams.get("wave") ?? undefined;
+
   try {
-    const responses = await listSurveyResponses();
+    const responses = await listSurveyResponses(wave);
     return NextResponse.json({ responses });
   } catch (error) {
     console.error("[api/survey] GET failed:", error);

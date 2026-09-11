@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useTeacherAuth } from "@/lib/useTeacherAuth";
 import type { SurveyResponse } from "@/lib/survey-db";
+import { SURVEY_WAVE, SURVEY_LABEL, formatSurveyWindow } from "@/lib/survey-config";
 
 type TallyField = "hopesSelected" | "discussionSelected" | "strugglesSelected" | "practiceHabits" | "priorityTopics";
 
@@ -69,7 +70,7 @@ export default function SurveyResultsPage() {
   const loadResponses = useCallback(async (pass: string) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/survey", {
+      const res = await fetch(`/api/survey?wave=${encodeURIComponent(SURVEY_WAVE)}`, {
         headers: { "x-upload-passcode": pass },
       });
       if (res.ok) {
@@ -138,8 +139,9 @@ export default function SurveyResultsPage() {
             Parent Survey
           </p>
           <h1 className="font-heading mt-2 text-3xl font-bold text-navy">
-            Results
+            {SURVEY_LABEL} — Results
           </h1>
+          <p className="mt-1 text-sm text-navy/50">Open {formatSurveyWindow()}</p>
 
           {loading ? (
             <p className="mt-8 text-sm text-navy/50">Loading…</p>

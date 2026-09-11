@@ -49,6 +49,13 @@ Built with [Next.js](https://nextjs.org) (App Router) and
   themselves rather than guessing their kid's answer.
   **`/survey/results`** (passcode-gated) tallies every question into a
   sorted bar chart and lists each response's "Other" elaborations.
+  Each "wave" (start-of-year, mid-year, end-of-year, ...) is a single
+  edit in `src/lib/survey-config.ts` — the label, the open/close
+  window, and a stable key that scopes both duplicate-prevention and
+  the results view. One submission per child per wave is enforced by
+  a database-level unique constraint (case/whitespace-insensitive on
+  the child's name), not just a client-side check, so it holds even
+  under concurrent submissions.
 
 The goal of this stage is to share something real with students,
 teachers, and parents and gather feedback before building full auth.

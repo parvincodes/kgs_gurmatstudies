@@ -14,6 +14,7 @@ import {
   MAX_PRIORITY_TOPICS,
   isValidSelection,
 } from "@/lib/survey-options";
+import { SURVEY_LABEL, getSurveyWindowStatus, formatSurveyWindow } from "@/lib/survey-config";
 
 function MinimalHeader() {
   return (
@@ -21,7 +22,7 @@ function MinimalHeader() {
       <div className="mx-auto flex max-w-2xl items-center gap-3">
         <Logo size={36} />
         <span className="font-heading text-base font-bold text-navy">
-          Parent&apos;s Orientation Survey
+          {SURVEY_LABEL}
         </span>
       </div>
     </header>
@@ -115,6 +116,8 @@ export default function SurveyPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const windowStatus = getSurveyWindowStatus();
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -164,6 +167,28 @@ export default function SurveyPage() {
     }
   }
 
+  if (windowStatus !== "open") {
+    return (
+      <>
+        <MinimalHeader />
+        <main className="flex flex-1 items-center justify-center px-5 py-24">
+          <div className="w-full max-w-md rounded-3xl border border-navy/10 bg-cream-dark/40 p-10 text-center">
+            <h1 className="font-heading text-2xl font-bold text-navy">
+              {windowStatus === "before" ? "Survey opens soon" : "Survey closed"}
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed text-navy/65">
+              {windowStatus === "before"
+                ? `The ${SURVEY_LABEL} isn't open yet.`
+                : `The ${SURVEY_LABEL} has closed.`}{" "}
+              It runs {formatSurveyWindow()}.
+            </p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   if (done) {
     return (
       <>
@@ -195,17 +220,18 @@ export default function SurveyPage() {
       <main className="flex-1">
         <div className="mx-auto max-w-2xl px-5 py-16">
           <p className="font-heading text-sm font-semibold uppercase tracking-wide text-saffron-dark">
-            Parent Input · 2026&ndash;27 Gurmat Class
+            {SURVEY_LABEL} · 2026&ndash;27 Gurmat Class
           </p>
           <h1 className="font-heading mt-2 text-3xl font-bold text-navy sm:text-4xl">
             What do you hope your child gets from this class?
           </h1>
           <p className="mt-3 text-navy/65">
-            Takes about two minutes. This is the first step — we&apos;ll
-            also be asking the kids for their own, anonymous thoughts
-            later this semester. So please answer from your own
-            perspective as a parent, not as a guess at what they&apos;d
-            say.
+            Takes about two minutes. This is the first of a few check-ins
+            we&apos;ll run through the year — we&apos;ll also be asking
+            the kids for their own, anonymous thoughts later this
+            semester. So please answer from your own perspective as a
+            parent, not as a guess at what they&apos;d say. One response
+            per child, please — open through {formatSurveyWindow()}.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-10 space-y-8">
