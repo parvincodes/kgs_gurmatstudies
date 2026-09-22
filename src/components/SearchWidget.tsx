@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import FilePreviewPanel from "./FilePreviewPanel";
 import { inferKind } from "@/lib/upload-helpers";
+import { isJapjiQuery } from "@/lib/japji-detect";
 
 type PublicMaterial = {
   id: number;
@@ -19,7 +20,7 @@ type ChatMessage =
   | { role: "bot"; text: string; results?: PublicMaterial[] };
 
 export default function SearchWidget() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [materials, setMaterials] = useState<PublicMaterial[] | null>(null);
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -44,14 +45,7 @@ export default function SearchWidget() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const q = query.trim();
-    if (!q) return;
-
-    setMessages((prev) => [...prev, { role: "user", text: q }]);
-    setQuery("");
-
+  function searchMaterials(q: string) {
     const pool = materials ?? [];
     const needle = q.toLowerCase();
     const results = pool.filter(
@@ -74,6 +68,47 @@ export default function SearchWidget() {
             text: "No approved materials match that yet. Try a different word, or check back once more are reviewed.",
           },
     ]);
+  }
+
+  // Questions about Japji Sahib go to the Claude-backed japji-sahib skill instead
+  // of the plain keyword search — everything else is untouched.
+  async function askJapji(q: string) {
+    setMessages((prev) => [...prev, { role: "bot", text: "Looking that up…" }]);
+    try {
+      const res = await fetch("/api/japji-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: q }),
+      });
+      const data = await res.json();
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        {
+          role: "bot",
+          text: res.ok && data.answer ? data.answer : (data.error ?? "Something went wrong answering that. Please try again."),
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        { role: "bot", text: "Couldn't reach the Japji Sahib assistant. Please try again." },
+      ]);
+    }
+  }
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+
+    setMessages((prev) => [...prev, { role: "user", text: q }]);
+    setQuery("");
+
+    if (isJapjiQuery(q)) {
+      void askJapji(q);
+    } else {
+      searchMaterials(q);
+    }
   }
 
   return (
