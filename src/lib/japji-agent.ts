@@ -75,7 +75,16 @@ ${skillInstructions}
 }
 
 const MAX_TOOL_ROUNDS = 6;
-const MODEL = "claude-sonnet-5";
+
+// Haiku by default — this task is mostly faithful reading/attribution of text
+// handed to it via the tool, not recall from training, which smaller models
+// do well, and it's meaningfully cheaper for a public, unauthenticated,
+// kid-facing endpoint. Override with JAPJI_CHAT_MODEL (e.g. "claude-sonnet-5")
+// if answers seem to skip steps (not checking coverage-status.md, guessing
+// instead of reading a file) or paraphrase too loosely — worth spot-checking
+// a few real questions, including one for a pauri with thin scholar coverage,
+// before trusting a model change here.
+const MODEL = process.env.JAPJI_CHAT_MODEL || "claude-haiku-4-5-20251001";
 
 export type JapjiChatTurn = { role: "user" | "assistant"; content: string };
 

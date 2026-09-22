@@ -52,7 +52,17 @@ Built with [Next.js](https://nextjs.org) (App Router) and
   `src/lib/japji-agent.ts`, so it reads the actual reference files on
   demand rather than us pre-selecting what's "relevant." Everything
   else on the site is untouched by this. Needs `ANTHROPIC_API_KEY` —
-  see below.
+  see below. Answers Haiku by default (cheap, and this task is mostly
+  faithful reading/attribution rather than recall, which smaller
+  models handle fine) — override with `JAPJI_CHAT_MODEL` if quality
+  needs it. Since this endpoint is public and hit directly by kids on
+  the site, cost is bounded two ways: a per-visitor rate limit in
+  `src/lib/japji-rate-limit.ts` (6/minute, 60/day per IP, backed by
+  Postgres so it survives cold starts), and — the actual hard
+  guarantee — a monthly spend limit that should be set on the API
+  key's org/workspace in the Anthropic Console (Settings → Limits).
+  The rate limiter is a courtesy on top of that, not a substitute for
+  it.
 - **`/survey`** — a 5-question, mostly multiple-choice parent-input
   form (public, no passcode), meant to be shared via a QR code at
   orientation. Every question is a checkbox list with an "Other,
@@ -91,7 +101,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `UPLOAD_PASSCODE` | `/upload`, `/review` | Pick any string — this is the shared teacher passcode. |
 | `BLOB_READ_WRITE_TOKEN` | `/upload` | Vercel dashboard → Storage → connect a Blob store to this project. Locally, run `vercel env pull .env.local` after connecting, or copy the token manually. **When creating the store, you must choose "Public" access — this cannot be changed later, and our code uploads with `access: "public"` everywhere.** A private store causes every upload to fail with a confusing CORS error in the browser rather than a clear message, because Vercel's blob endpoint doesn't send CORS headers on that particular rejection. |
 | `DATABASE_URL` | `/upload`, `/review` | Vercel dashboard → Storage → connect a Neon Postgres database to this project (this is what shows up as "Postgres" in the Storage tab now — Vercel's own Postgres product was retired in favor of Neon). Locally, run `vercel env pull .env.local`, or point it at a local Postgres instance. The `materials` table is created automatically on first use — no migration step needed. |
-| `ANTHROPIC_API_KEY` | the Japji Sahib assistant in the search widget | [console.anthropic.com](https://console.anthropic.com/) → Settings → API Keys. This is a real, metered API cost per question asked — there's no free tier. |
+| `ANTHROPIC_API_KEY` | the Japji Sahib assistant in the search widget | [console.anthropic.com](https://console.anthropic.com/) → Settings → API Keys. This is a real, metered API cost per question asked — there's no free tier. **Set a monthly spend limit on the key's org/workspace (Settings → Limits) before adding this** — the endpoint is public and unauthenticated. |
+| `JAPJI_CHAT_MODEL` | the Japji Sahib assistant | Optional. Defaults to Haiku. Only set this if you want to try a different model, e.g. `claude-sonnet-5`. |
 
 Without these, every other page still works — `/upload` and `/review`
 will show a clear error instead of crashing, and the search widget's
