@@ -34,11 +34,25 @@ Built with [Next.js](https://nextjs.org) (App Router) and
   document viewer, audio/video play with native browser controls.
   See `src/components/FilePreviewPanel.tsx`.
 - **Search widget** — a floating chat-style widget (bottom-right,
-  every page) lets anyone keyword-search **approved** materials by
-  title/description/subject and open a result straight into the same
-  preview panel. This is basic keyword search over existing metadata,
-  not an AI that reads inside documents — see the roadmap below for
-  what a real "ask questions about the content" version would need.
+  every page, open by default) lets anyone keyword-search **approved**
+  materials by title/description/subject and open a result straight
+  into the same preview panel. This is basic keyword search over
+  existing metadata, not an AI that reads inside documents — see the
+  roadmap below for what a real "ask questions about the content"
+  version would need.
+- **Japji Sahib assistant** — inside that same widget, a message about
+  Japji Sahib (Jap Ji, Mool Mantar, a specific pauri, etc.) is detected
+  and routed to a Claude-backed assistant instead of the keyword
+  search. It's built on the [`japji-sahib`
+  skill](https://github.com/parvincodes/jap-ji-baani-skill) — real,
+  attributed scholar sources (Sant Teja Singh, Prof. Sahib Singh's
+  *Darpan*, Jarnail Singh's essays) only, never a generated paraphrase
+  presented as scholarship — bundled under `src/content/japji-sahib/`
+  and given to Claude as tool-readable files via
+  `src/lib/japji-agent.ts`, so it reads the actual reference files on
+  demand rather than us pre-selecting what's "relevant." Everything
+  else on the site is untouched by this. Needs `ANTHROPIC_API_KEY` —
+  see below.
 - **`/survey`** — a 5-question, mostly multiple-choice parent-input
   form (public, no passcode), meant to be shared via a QR code at
   orientation. Every question is a checkbox list with an "Other,
@@ -77,9 +91,12 @@ Open [http://localhost:3000](http://localhost:3000).
 | `UPLOAD_PASSCODE` | `/upload`, `/review` | Pick any string — this is the shared teacher passcode. |
 | `BLOB_READ_WRITE_TOKEN` | `/upload` | Vercel dashboard → Storage → connect a Blob store to this project. Locally, run `vercel env pull .env.local` after connecting, or copy the token manually. **When creating the store, you must choose "Public" access — this cannot be changed later, and our code uploads with `access: "public"` everywhere.** A private store causes every upload to fail with a confusing CORS error in the browser rather than a clear message, because Vercel's blob endpoint doesn't send CORS headers on that particular rejection. |
 | `DATABASE_URL` | `/upload`, `/review` | Vercel dashboard → Storage → connect a Neon Postgres database to this project (this is what shows up as "Postgres" in the Storage tab now — Vercel's own Postgres product was retired in favor of Neon). Locally, run `vercel env pull .env.local`, or point it at a local Postgres instance. The `materials` table is created automatically on first use — no migration step needed. |
+| `ANTHROPIC_API_KEY` | the Japji Sahib assistant in the search widget | [console.anthropic.com](https://console.anthropic.com/) → Settings → API Keys. This is a real, metered API cost per question asked — there's no free tier. |
 
 Without these, every other page still works — `/upload` and `/review`
-will show a clear error instead of crashing.
+will show a clear error instead of crashing, and the search widget's
+Japji Sahib assistant will politely say it isn't configured yet
+instead of erroring.
 
 ## Roadmap — next phase
 
@@ -95,16 +112,17 @@ will show a clear error instead of crashing.
   materials from Postgres is a natural next step whenever you're ready.
 - **Search**: move from client-side filtering over mock data to a real
   full-text search once `/materials` is backed by Postgres.
-- **AI document Q&A**: the search widget currently matches only title/
-  description/subject text already in Postgres — it can't answer
-  questions about what's actually inside a PDF or audio file. A real
-  version would need: extracting text from each upload (PDF/Word
-  parsing, audio transcription), storing it (likely as embeddings for
-  semantic search), and calling an LLM API (e.g. the
-  [Claude API](https://docs.claude.com)) to answer questions grounded
-  in that content. That's meaningfully more infrastructure and an
-  ongoing API cost, so it's deliberately deferred until the basic
-  search widget proves useful.
+- **AI document Q&A**: the materials search itself still matches only
+  title/description/subject text already in Postgres — it can't
+  answer questions about what's actually inside a PDF or audio file.
+  (Japji Sahib questions are the one exception now, answered from the
+  bundled skill rather than from uploaded documents.) A real version
+  for uploaded materials would need: extracting text from each upload
+  (PDF/Word parsing, audio transcription), storing it (likely as
+  embeddings for semantic search), and calling an LLM API to answer
+  questions grounded in that content. That's meaningfully more
+  infrastructure and an ongoing API cost, so it's deliberately
+  deferred until the basic search widget proves useful.
 - **Relationship to the main Khalsa School site**: link the two once
   this portal is validated; no changes to the old site yet.
 
@@ -118,5 +136,7 @@ will show a clear error instead of crashing.
 4. In the same Storage tab, connect a Neon Postgres database — this
    sets `DATABASE_URL` automatically.
 5. In Settings → Environment Variables, add `UPLOAD_PASSCODE` with
-   whatever passcode you want teachers to use.
+   whatever passcode you want teachers to use, and `ANTHROPIC_API_KEY`
+   (from [console.anthropic.com](https://console.anthropic.com/)) to
+   turn on the Japji Sahib assistant.
 6. Redeploy so the new environment variables take effect.
