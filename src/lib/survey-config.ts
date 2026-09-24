@@ -7,7 +7,7 @@ export const SURVEY_WAVE = "2026-start-of-year";
 export const SURVEY_LABEL = "Start of Year Survey";
 
 export const SURVEY_OPENS_AT = new Date("2026-09-13T00:00:00-07:00");
-export const SURVEY_WINDOW_DAYS = 10;
+export const SURVEY_WINDOW_DAYS = 20;
 export const SURVEY_CLOSES_AT = new Date(
   SURVEY_OPENS_AT.getTime() + SURVEY_WINDOW_DAYS * 24 * 60 * 60 * 1000,
 );
