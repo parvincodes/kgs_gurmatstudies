@@ -1,0 +1,444 @@
+/* Lifespans chart: a sticky name column on the left and a year track on the
+   right. Every bar, gridline and marker is placed as a percentage of the same
+   1700-1870 axis, so they always line up. */
+
+.scroll {
+  /* Site colours, with literal fallbacks in case a theme variable is absent. */
+  --bg: var(--color-cream, #fffaf2);
+  --hover: var(--color-cream-dark, #fbf1e0);
+  --ink: var(--color-navy, #10203f);
+  --ink-2: rgb(16 32 63 / 0.72);
+  --ink-3: rgb(16 32 63 / 0.55);
+  --rule: rgb(16 32 63 / 0.12);
+  --grid: rgb(16 32 63 / 0.07);
+  --grid-strong: rgb(16 32 63 / 0.16);
+  --band: rgb(245 130 31 / 0.13);
+  --band-ink: var(--color-saffron-dark, #c2570a);
+  --marker: var(--color-navy, #10203f);
+
+  /* One colour per group of people. */
+  --g1: #2f58c4;
+  --g2: #e0700f;
+  --g3: #12897f;
+  --g4: #8457c2;
+  --g5: #c8423f;
+  --g6: #5b6b8c;
+
+  --namew: 17.5rem;
+  --trackmin: 40rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-block: 1px solid var(--rule);
+  padding-block: 6px;
+  scroll-padding-left: var(--namew);
+}
+
+.chart {
+  --axis-h: 28px;
+  --bandlab-h: 22px;
+  --tier-h: 18px;
+  --row-h: 30px;
+  --pad: 18px;
+  position: relative;
+  isolation: isolate;
+  min-width: calc(var(--namew) + var(--trackmin));
+  font-size: 0.875rem;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+/* Layers that span the whole track, behind and in front of the bars. */
+.under,
+.over {
+  position: absolute;
+  left: calc(var(--namew) + var(--pad));
+  right: var(--pad);
+  pointer-events: none;
+}
+.under {
+  top: var(--axis-h);
+  bottom: var(--axis-h);
+  z-index: 0;
+}
+.over {
+  top: calc(var(--axis-h) + var(--bandlab-h));
+  bottom: var(--axis-h);
+  z-index: 2;
+}
+.gridline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--grid);
+}
+.gridlineMajor {
+  background: var(--grid-strong);
+}
+.empire {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--band);
+}
+.marker {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  min-width: 1px;
+  margin-left: -0.5px;
+  background: var(--marker);
+  opacity: 0.75;
+}
+.markerSpan {
+  margin-left: 0;
+  min-width: 3px;
+  opacity: 0.45;
+}
+
+/* Header rows: axis, band label, anchor-event labels. */
+.headRow {
+  display: grid;
+  grid-template-columns: var(--namew) minmax(0, 1fr);
+}
+.headName {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--bg);
+  border-right: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.headNameTop {
+  align-items: flex-start;
+  padding-top: 3px;
+}
+.headCell {
+  position: relative;
+  margin-inline: var(--pad);
+}
+.axisCell {
+  height: var(--axis-h);
+}
+.tick {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.tickMajor {
+  color: var(--ink);
+  font-weight: 700;
+}
+.bandCell {
+  height: var(--bandlab-h);
+}
+.bandLabel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--band-ink);
+}
+.markerCell {
+  height: calc(var(--tier-h) * 6 + 4px);
+}
+.markerLabel {
+  position: absolute;
+  white-space: nowrap;
+  padding-right: 6px;
+  font-size: 0.78rem;
+  line-height: var(--tier-h);
+  color: var(--ink-2);
+}
+.markerLabel b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Group heading. */
+.group {
+  padding-top: 16px;
+  padding-bottom: 4px;
+}
+.groupLabel {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  width: max-content;
+  max-width: min(22rem, 86vw);
+  margin: 0;
+  padding: 3px 12px 3px 0;
+  background: var(--bg);
+  font-weight: 700;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+.swatch {
+  flex: none;
+  align-self: center;
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--c);
+}
+.groupCount {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* One person per row. */
+.row {
+  display: grid;
+  grid-template-columns: var(--namew) minmax(0, 1fr);
+  min-height: var(--row-h);
+}
+.row:hover,
+.rowOn {
+  background: var(--hover);
+}
+.name {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--bg);
+  border: 0;
+  border-right: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 4px 14px 4px 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.row:hover .name,
+.rowOn .name {
+  background: var(--hover);
+}
+.nameText {
+  font-weight: 500;
+  min-width: 0;
+}
+.years {
+  color: var(--ink-3);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.track {
+  position: relative;
+  margin-inline: var(--pad);
+}
+.bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  min-width: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.bar:focus-visible,
+.name:focus-visible {
+  outline: 2px solid var(--color-saffron-dark, #c2570a);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.fill {
+  display: block;
+  width: 100%;
+  height: 12px;
+  background: var(--c);
+  border-radius: 3px;
+}
+.bar:hover .fill,
+.rowOn .fill {
+  height: 16px;
+}
+/* Birth year approximate: the left end fades in. */
+.fillApprox {
+  -webkit-mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.08) 0, #000 30px);
+  mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.08) 0, #000 30px);
+}
+/* Birth year not known: a dashed lead-in that ends in a solid cap at the death year. */
+.fillUnknown {
+  position: relative;
+  background: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 60%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 60%);
+}
+.fillUnknown::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 8px;
+  top: calc(50% - 2px);
+  height: 4px;
+  background: repeating-linear-gradient(90deg, var(--c) 0 6px, transparent 6px 10px);
+}
+.fillUnknown::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--c);
+  border-radius: 0 3px 3px 0;
+}
+/* The life runs past the edge of the axis: a pointed end. */
+.fillClipLeft {
+  border-radius: 0 3px 3px 0;
+  clip-path: polygon(7px 0, 100% 0, 100% 100%, 7px 100%, 0 50%);
+}
+.fillClipRight {
+  border-radius: 3px 0 0 3px;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 0 100%);
+}
+
+/* Tooltip. Positioned from script, relative to the viewport. */
+.tip {
+  position: fixed;
+  z-index: 40;
+  left: 0;
+  top: 0;
+  width: max-content;
+  max-width: min(21rem, calc(100vw - 24px));
+  padding: 0.65rem 0.85rem 0.7rem;
+  border-radius: 0.75rem;
+  background: var(--color-navy, #10203f);
+  color: var(--color-cream, #fffaf2);
+  box-shadow: 0 8px 28px rgb(10 23 48 / 0.28);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  pointer-events: none;
+}
+.tipName {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+.tipMeta {
+  display: block;
+  margin: 0.15rem 0 0.4rem;
+  font-size: 0.8rem;
+  color: rgb(255 250 242 / 0.7);
+  font-variant-numeric: tabular-nums;
+}
+.tipExtra {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: rgb(255 250 242 / 0.7);
+}
+
+/* Key above the chart. */
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: rgb(16 32 63 / 0.72);
+}
+.key li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.keyMark {
+  display: block;
+  flex: none;
+  width: 34px;
+  height: 10px;
+  background: rgb(16 32 63 / 0.55);
+}
+.keyBand {
+  height: 14px;
+  background: rgb(245 130 31 / 0.13);
+  border-inline: 1px solid var(--color-navy, #10203f);
+}
+.keyMarker {
+  width: 1px;
+  height: 14px;
+  margin-inline: 6px;
+  background: var(--color-navy, #10203f);
+}
+.keyApprox {
+  border-radius: 3px;
+  -webkit-mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.1) 0, #000 80%);
+  mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.1) 0, #000 80%);
+}
+.keyUnknown {
+  background:
+    linear-gradient(rgb(16 32 63 / 0.55), rgb(16 32 63 / 0.55)) right / 6px 100% no-repeat,
+    repeating-linear-gradient(90deg, rgb(16 32 63 / 0.55) 0 6px, transparent 6px 10px) left
+      center / calc(100% - 8px) 4px no-repeat;
+}
+.keyOff {
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 0 100%);
+}
+
+/* Shown only when the chart is wider than the screen. */
+.swipeHint {
+  display: none;
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: rgb(16 32 63 / 0.55);
+}
+
+@media (max-width: 1000px) {
+  .swipeHint {
+    display: block;
+  }
+}
+@media (max-width: 900px) {
+  .scroll {
+    --namew: 14rem;
+  }
+}
+@media (max-width: 640px) {
+  .scroll {
+    --namew: 9rem;
+  }
+  .chart {
+    --row-h: 42px;
+  }
+  .name {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    padding-right: 8px;
+  }
+}

@@ -15,7 +15,13 @@ import {
   LockIcon,
 } from "@/components/icons";
 
-const PROGRAM = [
+const PROGRAM: {
+  icon: typeof BookIcon;
+  title: string;
+  desc: string;
+  /** Optional page to open when the card is clicked, with the label shown on the card. */
+  link?: { href: string; label: string };
+}[] = [
   {
     icon: BookIcon,
     title: "Gurbani",
@@ -25,6 +31,7 @@ const PROGRAM = [
     icon: LandmarkIcon,
     title: "History",
     desc: "The events of 1947 and 1984 — understanding the underlying issues, and what they mean for us today.",
+    link: { href: "/history/sikh-empire", label: "Sikh Empire chronology" },
   },
   {
     icon: LotusIcon,
@@ -178,22 +185,35 @@ export default function Home() {
             </div>
 
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {PROGRAM.map(({ icon: Icon, title, desc }) => (
-                <div
-                  key={title}
-                  className="rounded-2xl border border-navy/10 bg-cream p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-saffron/15 text-saffron-dark">
-                    <Icon />
+              {PROGRAM.map(({ icon: Icon, title, desc, link }) => {
+                const card = (
+                  <div className="flex h-full flex-col rounded-2xl border border-navy/10 bg-cream p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-saffron/15 text-saffron-dark">
+                      <Icon />
+                    </div>
+                    <h3 className="font-heading mt-5 text-lg font-bold text-navy">
+                      {title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-navy/65">
+                      {desc}
+                    </p>
+                    {link && (
+                      <p className="mt-auto pt-5 text-sm font-semibold text-saffron-dark">
+                        {link.label} <span aria-hidden="true">→</span>
+                      </p>
+                    )}
                   </div>
-                  <h3 className="font-heading mt-5 text-lg font-bold text-navy">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-navy/65">
-                    {desc}
-                  </p>
-                </div>
-              ))}
+                );
+                return link ? (
+                  <Link key={title} href={link.href} className="block h-full">
+                    {card}
+                  </Link>
+                ) : (
+                  <div key={title} className="h-full">
+                    {card}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

@@ -14,6 +14,12 @@ Built with [Next.js](https://nextjs.org) (App Router) and
   into the portal preview.
 - **`/materials`** — searchable, filterable study materials library.
   Sample content only (see `src/lib/materials.ts`), no database yet.
+- **`/history/sikh-empire`** — Sikh Empire chronology, opened from the
+  History card on the home page: a lifespans chart of the key figures
+  and a filterable, searchable list of dated events from the misls to
+  the annexation of Punjab. All content lives in
+  `src/lib/sikh-empire-chronology.ts`; it is a study aid and has not
+  been checked page by page against the scholars it names.
 - **`/progress`** — mock progress-tracking preview using sample data,
   not tied to a real account.
 - **`/login`** — placeholder — no auth is wired up yet.
